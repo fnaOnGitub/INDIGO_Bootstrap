@@ -2,9 +2,9 @@
 
 **Cluster di microservizi .NET 8 per sviluppo automatico assistito da AI**
 
-Versione: **2.0.0**  
+Versione: **2.1.0** 🧠  
 Data: **2026-01-01**  
-Stato: **✅ OPERATIVO E AUTONOMO**
+Stato: **✅ OPERATIVO E AUTONOMO CON INTELLIGENT AI ROUTING**
 
 ---
 
@@ -273,6 +273,55 @@ Ogni task AI produce un file standardizzato:
 
 ---
 
+## 🧠 INTELLIGENT AI ROUTING ⭐ NEW v2.1
+
+Il cluster ora dispone di un **sistema di routing intelligente** che classifica automaticamente i task come **AI** o **Standard** basandosi su criteri semantici avanzati.
+
+### Criteri di Classificazione AI
+
+Un task viene classificato come **AI Task** se soddisfa almeno uno dei seguenti criteri:
+
+1. **✅ Task Type Esplicito**: Task names predefiniti (`generate-code`, `optimize-prompt`, etc.)
+2. **✅ Task Name con "AI"**: Contiene "ai" (case-insensitive) → `my-ai-task`
+3. **✅ Verbi Creativi**: Payload con verbi come *crea*, *genera*, *sviluppa*, *ottimizza*, *analizza*
+4. **✅ Linguaggio Naturale**: Payload in linguaggio naturale (non JSON/YAML/XML)
+
+### Esempi
+
+```json
+// ✅ AI Task (verbo creativo "Crea")
+{
+  "Task": "richiesta-utente",
+  "Payload": "Crea un sistema di notifiche push real-time"
+}
+→ Instradato a IndigoAiWorker01 (porta 5005)
+
+// ✅ AI Task (task name contiene "ai")
+{
+  "Task": "my-ai-generator",
+  "Payload": "simple test"
+}
+→ Instradato a IndigoAiWorker01 (porta 5005)
+
+// ❌ Standard Task (JSON strutturato)
+{
+  "Task": "process-data",
+  "Payload": "{\"id\": 123, \"value\": \"test\"}"
+}
+→ Instradato a Worker01/02 (round-robin)
+```
+
+### Vantaggi
+
+- ✅ **Zero configurazione**: Non serve conoscere task types predefiniti
+- ✅ **Intelligenza semantica**: Analizza il significato, non solo keyword
+- ✅ **Multilingua**: Supporta italiano e inglese
+- ✅ **Trasparente**: Log dettagliati spiegano ogni decisione
+
+**Guida completa**: `INTELLIGENT_AI_ROUTING_GUIDE.md`
+
+---
+
 ## 🔄 WORKFLOW AUTONOMO
 
 ### Scenario Completo: Ciclo Autonomo
@@ -501,6 +550,7 @@ curl -X POST http://localhost:5006/ask-user/answer \
 | Guida | Righe | Argomento |
 |-------|-------|-----------|
 | `README.md` | 1000+ | **Documentazione Master** (questo file) |
+| `INTELLIGENT_AI_ROUTING_GUIDE.md` | 900+ | 🧠 **Intelligent AI Routing** ⭐ NEW |
 | `FILE_ALWAYS_MODE_GUIDE.md` | 800+ | FILE ALWAYS MODE - Ogni task genera file |
 | `AI_TASK_RESULT_PANEL_GUIDE.md` | 600+ | UI per visualizzare risultati task AI |
 | `AGENT_LOGS_UI_GUIDE.md` | 700+ | Log Viewer con auto-refresh |
@@ -508,7 +558,7 @@ curl -X POST http://localhost:5006/ask-user/answer \
 | `CURSOR_MONITOR_AGENT_GUIDE.md` | 1000+ | **CursorMonitorAgent autonomo** |
 | `PROMPT_OPTIMIZER_GUIDE.md` | 600+ | PromptOptimizer semantic analysis |
 
-**Totale**: 7 guide, ~5200 righe di documentazione
+**Totale**: 8 guide, ~6100 righe di documentazione
 
 ### Architettura Documentata
 

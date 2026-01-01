@@ -71,9 +71,66 @@ string GetNextWorkerUrl()
     }
 }
 
-// Metodo per verificare se un task è di tipo AI
-bool IsAiTask(string task)
+// ==================== INTELLIGENT AI ROUTING ====================
+
+/// <summary>
+/// Verifica se il task name contiene "ai" (case-insensitive)
+/// </summary>
+bool TaskNameContainsAi(string taskName)
 {
+    return taskName.Contains("ai", StringComparison.OrdinalIgnoreCase);
+}
+
+/// <summary>
+/// Verifica se il payload contiene verbi creativi
+/// </summary>
+bool IsCreativePayload(string? payload)
+{
+    if (string.IsNullOrWhiteSpace(payload))
+        return false;
+    
+    var creativeVerbs = new[]
+    {
+        "crea", "genera", "sviluppa", "costruisci", 
+        "implementa", "progetta", "ottimizza", "analizza",
+        "create", "generate", "develop", "build",
+        "implement", "design", "optimize", "analyze"
+    };
+    
+    var payloadLower = payload.ToLowerInvariant();
+    return creativeVerbs.Any(verb => payloadLower.Contains(verb));
+}
+
+/// <summary>
+/// Verifica se il payload è in linguaggio naturale (non strutturato)
+/// </summary>
+bool IsNaturalLanguage(string? payload)
+{
+    if (string.IsNullOrWhiteSpace(payload))
+        return false;
+    
+    var trimmed = payload.Trim();
+    
+    // Non è linguaggio naturale se inizia con caratteri di struttura dati
+    if (trimmed.StartsWith("{") || trimmed.StartsWith("[") || 
+        trimmed.StartsWith("<") || trimmed.StartsWith("---"))
+    {
+        return false;
+    }
+    
+    // È linguaggio naturale se contiene spazi e parole comuni
+    var hasSpaces = trimmed.Contains(' ');
+    var hasCommonWords = trimmed.Split(' ').Length > 3;
+    
+    return hasSpaces && hasCommonWords;
+}
+
+/// <summary>
+/// Metodo avanzato per verificare se un task è di tipo AI
+/// </summary>
+bool IsAiTask(string task, string? payload = null)
+{
+    // Lista dei task types espliciti AI
     var aiTaskTypes = new[]
     {
         "generate-code",
@@ -85,25 +142,76 @@ bool IsAiTask(string task)
         "optimize-prompt"
     };
     
-    return aiTaskTypes.Contains(task.ToLowerInvariant());
+    // 1. Verifica task types espliciti
+    if (aiTaskTypes.Contains(task.ToLowerInvariant()))
+    {
+        logger.LogInformation("✓ AI Task rilevato: Task type esplicito '{Task}'", task);
+        return true;
+    }
+    
+    // 2. Verifica se task name contiene "ai"
+    if (TaskNameContainsAi(task))
+    {
+        logger.LogInformation("✓ AI Task rilevato: Task name contiene 'ai' ('{Task}')", task);
+        return true;
+    }
+    
+    // 3. Verifica payload con verbi creativi
+    if (IsCreativePayload(payload))
+    {
+        logger.LogInformation("✓ AI Task rilevato: Payload contiene verbi creativi");
+        return true;
+    }
+    
+    // 4. Verifica se è linguaggio naturale
+    if (IsNaturalLanguage(payload))
+    {
+        logger.LogInformation("✓ AI Task rilevato: Payload è linguaggio naturale");
+        return true;
+    }
+    
+    logger.LogInformation("✗ Task classificato come standard: '{Task}'", task);
+    return false;
 }
 
-// Metodo per ottenere il worker appropriato per un task
-string GetWorkerForTask(string task)
+/// <summary>
+/// Determina il worker appropriato con routing intelligente
+/// </summary>
+string GetWorkerForTask(string task, string? payload = null)
 {
-    if (IsAiTask(task))
+    logger.LogInformation("=== AI ROUTING ATTIVATO ===");
+    logger.LogInformation("Analisi task: '{Task}'", task);
+    
+    if (!string.IsNullOrWhiteSpace(payload))
     {
-        logger.LogInformation("Task AI riconosciuto: {Task} → IndigoAiWorker01", task);
+        var previewLength = Math.Min(payload.Length, 100);
+        var preview = payload.Substring(0, previewLength);
+        if (payload.Length > 100) preview += "...";
+        logger.LogInformation("Payload preview: {Preview}", preview);
+    }
+    
+    if (IsAiTask(task, payload))
+    {
+        logger.LogInformation(">>> Task classificato come AI");
+        logger.LogInformation(">>> Instradato a Worker AI (IndigoAiWorker01)");
         return aiWorkers[0];
     }
     else
     {
         var workerUrl = GetNextWorkerUrl();
-        logger.LogInformation("Task standard: {Task} → Worker operativo (round-robin)", task);
+        logger.LogInformation(">>> Task classificato come Standard");
+        logger.LogInformation(">>> Instradato a Worker Standard (round-robin): {Worker}", workerUrl);
         return workerUrl;
     }
 }
 
+logger.LogInformation("=== INTELLIGENT AI ROUTING CONFIGURATO ===");
+logger.LogInformation("Criteri di classificazione AI:");
+logger.LogInformation("  ✓ Task type esplicito (generate-code, optimize-prompt, etc.)");
+logger.LogInformation("  ✓ Task name contiene 'ai' (case-insensitive)");
+logger.LogInformation("  ✓ Payload con verbi creativi (crea, genera, sviluppa, ottimizza, etc.)");
+logger.LogInformation("  ✓ Payload in linguaggio naturale (non JSON/YAML/XML)");
+logger.LogInformation("");
 logger.LogInformation("Load balancing configurato:");
 logger.LogInformation("  - Workers standard: {Count}", workers.Length);
 foreach (var worker in workers)
@@ -173,13 +281,22 @@ app.MapPost("/dispatch", async (DispatchRequest request, AgentState state, LogBu
     // Aggiorna ultimo comando
     state.UpdateLastCommand(request.Task);
     
-    // Determina il worker appropriato (AI o standard)
-    var workerUrl = GetWorkerForTask(request.Task);
-    var workerType = IsAiTask(request.Task) ? "AI-Worker" : "Standard-Worker";
+    // Determina il worker appropriato (AI o standard) con analisi intelligente
+    var workerUrl = GetWorkerForTask(request.Task, request.Payload);
+    var isAiTask = IsAiTask(request.Task, request.Payload);
+    var workerType = isAiTask ? "AI-Worker" : "Standard-Worker";
     log.LogInformation("Task inoltrato a {WorkerType}: {WorkerUrl}", workerType, workerUrl);
     
-    // Log routing
-    logBuffer.Add($"Instradato a {workerType}: {workerUrl}");
+    // Log routing dettagliato
+    if (isAiTask)
+    {
+        logBuffer.Add($"AI Routing attivato → Task classificato come AI");
+        logBuffer.Add($"Instradato a Worker AI: {workerUrl}");
+    }
+    else
+    {
+        logBuffer.Add($"Instradato a {workerType}: {workerUrl}");
+    }
     
     try
     {
@@ -213,7 +330,7 @@ app.MapPost("/dispatch", async (DispatchRequest request, AgentState state, LogBu
                 Message = $"Task dispatched to {workerType}",
                 Worker = workerUrl,
                 WorkerType = workerType,
-                IsAiTask = IsAiTask(request.Task),
+                IsAiTask = isAiTask,
                 WorkerResult = workerResult
             });
         }
