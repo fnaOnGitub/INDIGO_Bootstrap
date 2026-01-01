@@ -5,20 +5,37 @@ using ControlCenter.UI.Models;
 namespace ControlCenter.UI.Services;
 
 /// <summary>
-/// Client HTTP per comunicare con LocalApiServer del Bootstrapper (http://localhost:5000)
+/// Client HTTP per comunicare con l'Orchestrator (porta dinamica)
 /// </summary>
 public class BootstrapperClient
 {
     private readonly HttpClient _httpClient;
-    private const string BaseUrl = "http://localhost:5000";
+    private string _orchestratorBaseUrl = "http://localhost:5001";
+
+    public string OrchestratorUrl => _orchestratorBaseUrl;
 
     public BootstrapperClient()
     {
         _httpClient = new HttpClient
         {
-            BaseAddress = new Uri(BaseUrl),
-            Timeout = TimeSpan.FromMinutes(30)
+            Timeout = TimeSpan.FromSeconds(30)
         };
+    }
+
+    /// <summary>
+    /// Aggiorna l'URL dell'Orchestrator
+    /// </summary>
+    public void UpdateOrchestratorUrl(string url)
+    {
+        _orchestratorBaseUrl = url;
+    }
+
+    /// <summary>
+    /// Aggiorna la porta dell'Orchestrator
+    /// </summary>
+    public void UpdateOrchestratorPort(int port)
+    {
+        _orchestratorBaseUrl = $"http://localhost:{port}";
     }
 
     /// <summary>
@@ -240,7 +257,7 @@ public class BootstrapperClient
             };
 
             var content = JsonContent.Create(requestBody);
-            var response = await _httpClient.PostAsync("http://localhost:5001/dispatch", content);
+            var response = await _httpClient.PostAsync($"{_orchestratorBaseUrl}/dispatch", content);
             
             if (response.IsSuccessStatusCode)
             {

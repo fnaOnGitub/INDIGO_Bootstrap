@@ -14,6 +14,8 @@ public partial class NaturalLanguageViewModel : ObservableObject
 {
     private readonly BootstrapperClient _client;
     private readonly TimelineService _timelineService;
+    private readonly HealthCheckService _healthCheck;
+    private readonly AutoRecoveryService _autoRecovery;
 
     [ObservableProperty]
     private string _userInput = "";
@@ -22,7 +24,7 @@ public partial class NaturalLanguageViewModel : ObservableObject
     private bool _isExecuting = false;
 
     [ObservableProperty]
-    private string _currentStatus = "Pronto ad eseguire il tuo comando";
+    private string _currentStatus = "Verifica Orchestrator in corso...";
 
     [ObservableProperty]
     private string _currentStepTitle = "";
@@ -33,12 +35,105 @@ public partial class NaturalLanguageViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasCurrentStep = false;
 
+    [ObservableProperty]
+    private bool _isOrchestratorOnline = false;
+
+    [ObservableProperty]
+    private string _orchestratorStatus = "Verifica in corso...";
+
+    [ObservableProperty]
+    private int _orchestratorPort = 0;
+
+    [ObservableProperty]
+    private string _orchestratorResponseTime = "---";
+
     public ObservableCollection<TimelineStep> TimelineSteps => _timelineService.Steps;
 
     public NaturalLanguageViewModel()
     {
         _client = new BootstrapperClient();
         _timelineService = new TimelineService();
+        _healthCheck = new HealthCheckService();
+        _autoRecovery = new AutoRecoveryService(_healthCheck);
+
+        // Verifica Orchestrator all'avvio
+        _ = InitializeOrchestratorAsync();
+    }
+
+    /// <summary>
+    /// Inizializza e verifica l'Orchestrator all'avvio
+    /// </summary>
+    private async Task InitializeOrchestratorAsync()
+    {
+        CurrentStatus = "Verifica Orchestrator in corso...";
+        OrchestratorStatus = "🔍 Ricerca in corso...";
+
+        // Verifica se è già attivo
+        var checkResult = await _healthCheck.CheckOrchestratorAsync();
+
+        if (checkResult.IsOnline && checkResult.Port.HasValue)
+        {
+            // Orchestrator trovato!
+            IsOrchestratorOnline = true;
+            OrchestratorPort = checkResult.Port.Value;
+            OrchestratorStatus = $"✅ Online su porta {OrchestratorPort}";
+            OrchestratorResponseTime = $"{_healthCheck.LastResponseTime.TotalMilliseconds:F0}ms";
+            CurrentStatus = "✅ Pronto ad eseguire il tuo comando";
+
+            // Aggiorna client
+            _client.UpdateOrchestratorPort(checkResult.Port.Value);
+
+            return;
+        }
+
+        // Orchestrator non trovato, tenta avvio automatico
+        OrchestratorStatus = "⏳ Avvio automatico in corso...";
+        CurrentStatus = "⏳ Avvio Orchestrator...";
+
+        var startResult = await _autoRecovery.StartOrchestratorAsync();
+
+        if (startResult.Success)
+        {
+            // Orchestrator avviato con successo
+            var recheckResult = await _healthCheck.CheckOrchestratorAsync();
+            
+            if (recheckResult.IsOnline && recheckResult.Port.HasValue)
+            {
+                IsOrchestratorOnline = true;
+                OrchestratorPort = recheckResult.Port.Value;
+                OrchestratorStatus = $"✅ Avviato su porta {OrchestratorPort}";
+                OrchestratorResponseTime = $"{_healthCheck.LastResponseTime.TotalMilliseconds:F0}ms";
+                CurrentStatus = "✅ Pronto ad eseguire il tuo comando";
+
+                _client.UpdateOrchestratorPort(recheckResult.Port.Value);
+
+                MessageBox.Show(
+                    $"Orchestrator avviato automaticamente su porta {OrchestratorPort}",
+                    "Orchestrator Avviato",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information
+                );
+            }
+        }
+        else
+        {
+            // Avvio fallito
+            IsOrchestratorOnline = false;
+            OrchestratorStatus = "❌ Offline";
+            CurrentStatus = "❌ Orchestrator non disponibile";
+
+            var result = MessageBox.Show(
+                $"Impossibile avviare l'Orchestrator:\n{startResult.Message}\n\nVuoi aprire la cartella dell'agente?",
+                "Errore Orchestrator",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning
+            );
+
+            if (result == MessageBoxResult.Yes)
+            {
+                _autoRecovery.OpenOrchestratorFolder();
+            }
+        }
     }
 
     /// <summary>
@@ -52,6 +147,37 @@ public partial class NaturalLanguageViewModel : ObservableObject
             MessageBox.Show("Scrivi cosa vuoi che il cluster faccia!", "Input Richiesto", 
                 MessageBoxButton.OK, MessageBoxImage.Information);
             return;
+        }
+
+        // Verifica che l'Orchestrator sia online
+        if (!IsOrchestratorOnline)
+        {
+            var result = MessageBox.Show(
+                "L'Orchestrator non è attivo.\nVuoi tentare di avviarlo automaticamente?",
+                "Orchestrator Offline",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning
+            );
+
+            if (result == MessageBoxResult.Yes)
+            {
+                await InitializeOrchestratorAsync();
+                
+                if (!IsOrchestratorOnline)
+                {
+                    MessageBox.Show(
+                        "Impossibile avviare l'Orchestrator.\nAvvialo manualmente e riprova.",
+                        "Errore",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error
+                    );
+                    return;
+                }
+            }
+            else
+            {
+                return;
+            }
         }
 
         IsExecuting = true;
@@ -199,10 +325,51 @@ public partial class NaturalLanguageViewModel : ObservableObject
     private void ClearTimeline()
     {
         _timelineService.Clear();
-        CurrentStatus = "Pronto ad eseguire il tuo comando";
+        CurrentStatus = IsOrchestratorOnline ? "Pronto ad eseguire il tuo comando" : "Orchestrator offline";
         CurrentStepTitle = "";
         CurrentStepDescription = "";
         HasCurrentStep = false;
+    }
+
+    /// <summary>
+    /// Riavvia l'Orchestrator manualmente
+    /// </summary>
+    [RelayCommand]
+    private async Task RestartOrchestratorAsync()
+    {
+        var result = MessageBox.Show(
+            "Vuoi riavviare l'Orchestrator?",
+            "Riavvio Orchestrator",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question
+        );
+
+        if (result == MessageBoxResult.Yes)
+        {
+            CurrentStatus = "⏳ Riavvio Orchestrator...";
+            OrchestratorStatus = "⏳ Riavvio in corso...";
+
+            await InitializeOrchestratorAsync();
+        }
+    }
+
+    /// <summary>
+    /// Apre la cartella dell'Orchestrator
+    /// </summary>
+    [RelayCommand]
+    private void OpenOrchestratorFolder()
+    {
+        var success = _autoRecovery.OpenOrchestratorFolder();
+        
+        if (!success)
+        {
+            MessageBox.Show(
+                "Impossibile trovare la cartella Agent.Orchestrator",
+                "Errore",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error
+            );
+        }
     }
 
     /// <summary>

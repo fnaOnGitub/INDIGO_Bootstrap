@@ -18,6 +18,7 @@
     <Window.Resources>
         <converters:StepTypeToColorConverter x:Key="StepTypeToColorConverter"/>
         <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
         
         <!-- Stile per card moderne -->
@@ -89,7 +90,12 @@
         <!-- Header -->
         <Border Background="#4B0082" Height="70" VerticalAlignment="Top">
             <Grid Margin="30,0">
-                <StackPanel VerticalAlignment="Center">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
                     <TextBlock Text="🧠 IndigoLab Natural Language Console" 
                                FontSize="24" 
                                FontWeight="Bold" 
@@ -99,6 +105,49 @@
                                Foreground="#E0E0E0" 
                                Margin="0,4,0,0"/>
                 </StackPanel>
+
+                <!-- Stato Orchestrator -->
+                <Border Grid.Column="1" 
+                        Background="#5B1092" 
+                        CornerRadius="8" 
+                        Padding="16,8" 
+                        VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="⚡ Orchestrator:" 
+                                   FontSize="12" 
+                                   Foreground="White" 
+                                   VerticalAlignment="Center" 
+                                   Margin="0,0,8,0"/>
+                        <TextBlock Text="{Binding OrchestratorStatus}" 
+                                   FontSize="12" 
+                                   FontWeight="Bold" 
+                                   Foreground="White" 
+                                   VerticalAlignment="Center"/>
+                        
+                        <!-- Pulsanti azioni -->
+                        <Button Content="🔄" 
+                                Command="{Binding RestartOrchestratorCommand}"
+                                Background="Transparent" 
+                                Foreground="White" 
+                                BorderThickness="0" 
+                                Cursor="Hand" 
+                                FontSize="14" 
+                                Padding="8,4" 
+                                Margin="8,0,0,0"
+                                ToolTip="Riavvia Orchestrator"/>
+                        
+                        <Button Content="📁" 
+                                Command="{Binding OpenOrchestratorFolderCommand}"
+                                Background="Transparent" 
+                                Foreground="White" 
+                                BorderThickness="0" 
+                                Cursor="Hand" 
+                                FontSize="14" 
+                                Padding="8,4" 
+                                Margin="4,0,0,0"
+                                ToolTip="Apri cartella Orchestrator"/>
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
 
@@ -115,6 +164,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
@@ -231,8 +281,65 @@
                         </Grid>
                     </Border>
 
-                    <!-- Stato generale -->
+                    <!-- Pannello dettagli Orchestrator -->
                     <Border Grid.Row="3" 
+                            Style="{StaticResource CardStyle}"
+                            BorderBrush="{Binding IsOrchestratorOnline, Converter={StaticResource BoolToColorConverter}}" 
+                            BorderThickness="2"
+                            Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="⚙️ Stato Orchestrator" 
+                                      FontSize="14" 
+                                      FontWeight="SemiBold" 
+                                      Foreground="#333" 
+                                      Margin="0,0,0,12"/>
+                            
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" 
+                                          Text="Stato:" 
+                                          FontSize="12" 
+                                          Foreground="#666" 
+                                          Margin="0,0,8,6"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" 
+                                          Text="{Binding OrchestratorStatus}" 
+                                          FontSize="12" 
+                                          FontWeight="SemiBold" 
+                                          Margin="0,0,0,6"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" 
+                                          Text="Porta:" 
+                                          FontSize="12" 
+                                          Foreground="#666" 
+                                          Margin="0,0,8,6"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" 
+                                          Text="{Binding OrchestratorPort}" 
+                                          FontSize="12" 
+                                          Margin="0,0,0,6"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" 
+                                          Text="Risposta:" 
+                                          FontSize="12" 
+                                          Foreground="#666" 
+                                          Margin="0,0,8,0"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" 
+                                          Text="{Binding OrchestratorResponseTime}" 
+                                          FontSize="12"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Stato generale -->
+                    <Border Grid.Row="4" 
                             Background="#F9F9F9" 
                             Padding="16" 
                             CornerRadius="8"
