@@ -1,0 +1,405 @@
+# IndigoAiWorker01 - Integration Guide
+
+Guida completa per integrare IndigoAiWorker01 nel cluster IndigoLab.
+
+## Overview
+
+IndigoAiWorker01 è un Worker AI avanzato che estende il cluster con capacità di:
+- Generazione codice da prompt
+- Refactoring automatico
+- Analisi e spiegazione codice
+- Creazione componenti
+- Fix automatico snippet
+- Integrazione diretta con Cursor
+
+## Architettura Cluster Aggiornata
+
+```
+IndigoLab Cluster
+├── Bootstrapper (5000)      → API simulato legacy
+├── Orchestrator (5001)      → Dispatch + Load Balancing
+├── Worker01 (5002)          → Esecuzione task generici
+├── Worker02 (5003)          → Esecuzione task generici
+├── Monitor (5004)           → Monitoraggio cluster
+└── IndigoAiWorker01 (5005)  → AI-Powered Worker ⭐ NEW
+```
+
+## Integrazione con Orchestrator
+
+### Opzione 1: Aggiunta al Load Balancing
+
+**Modifica `Agent.Orchestrator/Program.cs`:**
+
+```csharp
+// Aggiungi IndigoAiWorker01 alla lista workers
+var workers = new[] { 
+    "http://localhost:5002",  // Worker01
+    "http://localhost:5003",  // Worker02
+    "http://localhost:5005"   // IndigoAiWorker01 ⭐
+};
+```
+
+Con questa configurazione, l'Orchestrator distribuirà automaticamente i task AI a IndigoAiWorker01 quando sarà il suo turno nel round-robin.
+
+### Opzione 2: Routing Selettivo (Consigliato)
+
+**Modifica `Agent.Orchestrator/Program.cs`:**
+
+```csharp
+// Workers standard
+var standardWorkers = new[] { 
+    "http://localhost:5002",  // Worker01
+    "http://localhost:5003"   // Worker02
+};
+
+// Workers AI
+var aiWorkers = new[] { 
+    "http://localhost:5005"   // IndigoAiWorker01
+};
+
+// Dispatcher intelligente
+string GetWorkerUrl(string taskType)
+{
+    // Task AI → IndigoAiWorker01
+    if (IsAiTask(taskType))
+    {
+        return aiWorkers[0];
+    }
+    
+    // Task standard → round-robin su Worker01/02
+    return GetNextStandardWorker();
+}
+
+bool IsAiTask(string task)
+{
+    var aiTasks = new[] { 
+        "generate-code", "refactor-code", "explain-code", 
+        "create-component", "fix-snippet", "cursor-prompt" 
+    };
+    return aiTasks.Contains(task.ToLowerInvariant());
+}
+```
+
+## Integrazione con Dashboard
+
+### Aggiorna AgentService
+
+**`ControlCenter.UI/Services/AgentService.cs`:**
+
+```csharp
+private void InitializeAgents()
+{
+    _cachedAgents = new List<AgentInfoViewModel>
+    {
+        // ... agenti esistenti ...
+        
+        new AgentInfoViewModel
+        {
+            Name = "IndigoAiWorker01",
+            Type = "ai-worker",
+            Port = 5005,
+            Status = "Unknown",
+            IsHealthy = false
+        }
+    };
+}
+```
+
+### Aggiorna Monitor
+
+**`Agent.Monitor/Program.cs`:**
+
+```csharp
+// Aggiungi IndigoAiWorker01 alla lista agenti monitorati
+var clusterAgents = new[]
+{
+    new { Name = "orchestrator", Url = "http://localhost:5001" },
+    new { Name = "worker01", Url = "http://localhost:5002" },
+    new { Name = "worker02", Url = "http://localhost:5003" },
+    new { Name = "IndigoAiWorker01", Url = "http://localhost:5005" } // ⭐ NEW
+};
+```
+
+## Utilizzo da Control Center UI
+
+### Dispatch Task AI dall'Orchestrator
+
+1. Apri Control Center UI
+2. Vai su **Agents** → Seleziona **agent-orchestrator**
+3. Nella sezione **Dispatch Task**:
+   - **Task Name**: `generate-code`
+   - **Payload**: `Crea una classe Product con Id, Name, Price`
+4. Clicca **Dispatch Task**
+
+L'Orchestrator inoltra automaticamente il task a IndigoAiWorker01.
+
+### Risposta Attesa
+
+```json
+{
+  "Success": true,
+  "Message": "Task dispatched to worker",
+  "Worker": "http://localhost:5005",
+  "WorkerResult": {
+    "Success": true,
+    "Message": "AI Task executed",
+    "Result": "// Codice generato da IndigoAiWorker01...",
+    "ExecutedTask": "generate-code",
+    "Timestamp": "2026-01-01T11:18:35.804Z",
+    "CursorFileWritten": true,
+    "CursorFilePath": "C:\\...\\ai-requests\\generate-code-2026-01-01-111835.md"
+  }
+}
+```
+
+## Cursor Integration Workflow
+
+### Flusso Completo
+
+```
+1. User (Control Center UI)
+   ↓
+2. Orchestrator (dispatch task AI)
+   ↓
+3. IndigoAiWorker01 (esegue task)
+   ↓
+4. AiEngine (genera codice/analisi)
+   ↓
+5. CursorBridge (scrive file .md)
+   ↓
+6. .cursor/ai-requests/generate-code-<timestamp>.md
+   ↓
+7. Cursor (legge file e reagisce) ⭐
+   ↓
+8. Codice generato/modificato nel progetto
+```
+
+### File Generati per Cursor
+
+**Esempio: `.cursor/ai-requests/generate-code-2026-01-01-111835.md`**
+
+```markdown
+# AI Request from IndigoAiWorker01
+
+**Timestamp**: 2026-01-01 11:18:35 UTC
+**Task**: generate-code
+**Status**: Pending
+
+## Request Details
+
+Crea una classe Product con Id, Name, Price
+
+## Instructions for Cursor
+
+1. Analizza il payload
+2. Implementa la soluzione richiesta
+3. Verifica che il codice sia corretto
+4. Aggiorna questo file con lo stato: Completed
+
+## Expected Output
+
+- File modificati: [list]
+- Nuovi file creati: [list]
+- Test eseguiti: [list]
+
+---
+*Generated by IndigoAiWorker01 AI Engine v1.0*
+```
+
+## Testing
+
+### Test Completo del Cluster
+
+```bash
+# 1. Health check di tutti gli agenti
+curl http://localhost:5000/health  # Bootstrapper
+curl http://localhost:5001/health  # Orchestrator
+curl http://localhost:5002/health  # Worker01
+curl http://localhost:5003/health  # Worker02
+curl http://localhost:5004/health  # Monitor
+curl http://localhost:5005/health  # IndigoAiWorker01 ⭐
+
+# 2. Status cluster via Monitor
+curl http://localhost:5004/cluster/status
+
+# 3. Dispatch task AI via Orchestrator
+curl -X POST http://localhost:5001/dispatch \
+  -H "Content-Type: application/json" \
+  -d '{"Task":"generate-code","Payload":"Crea classe User"}'
+
+# 4. Verifica file generati per Cursor
+curl http://localhost:5005/cursor/bridge-files
+```
+
+### Test Diretto IndigoAiWorker01
+
+```bash
+# Generate Code
+curl -X POST http://localhost:5005/execute \
+  -H "Content-Type: application/json" \
+  -d '{"Task":"generate-code","Payload":"Crea classe Invoice"}'
+
+# Refactor Code
+curl -X POST http://localhost:5005/execute \
+  -H "Content-Type: application/json" \
+  -d '{"Task":"refactor-code","Payload":"public void Calc(){var x=10;if(x>5)Console.WriteLine(x);}"}'
+
+# Explain Code
+curl -X POST http://localhost:5005/execute \
+  -H "Content-Type: application/json" \
+  -d '{"Task":"explain-code","Payload":"public async Task<List<User>> GetAsync(){return await _db.Users.ToListAsync();}"}'
+
+# Create Component
+curl -X POST http://localhost:5005/execute \
+  -H "Content-Type: application/json" \
+  -d '{"Task":"create-component","Payload":"Logger middleware per ASP.NET Core"}'
+
+# Fix Snippet
+curl -X POST http://localhost:5005/execute \
+  -H "Content-Type: application/json" \
+  -d '{"Task":"fix-snippet","Payload":"var users=GetUsers();foreach(var u in users)Console.WriteLine(u.Name);"}'
+
+# Cursor Prompt (Direct)
+curl -X POST http://localhost:5005/execute \
+  -H "Content-Type: application/json" \
+  -d '{"Task":"cursor-prompt","Payload":"Crea pagina WPF per statistiche"}'
+```
+
+## Monitoraggio
+
+### Dashboard in Tempo Reale
+
+1. Apri Control Center UI
+2. Vai su **Dashboard**
+3. Verifica che **IndigoAiWorker01** appaia nella lista agenti
+4. Controlla:
+   - Health status (pallino verde)
+   - Uptime
+   - Last Task (tipo di task AI eseguito)
+
+### Log Worker AI
+
+```bash
+# Visualizza log in tempo reale
+cd IndigoAiWorker01
+dotnet run
+
+# Output esempio:
+# info: Program[0]
+#       === IndigoAiWorker01 avviato ===
+# info: Program[0]
+#       Porta: 5005
+# info: Program[0]
+#       Versione: 1.0.0-AI
+# info: Program[0]
+#       Tipo: AI-Powered Worker
+# info: Program[0]
+#       Task AI ricevuto: Task='generate-code', Payload length=35
+# info: IndigoAiWorker01.AiEngine[0]
+#       GenerateCode richiesto: Crea classe User
+# info: IndigoAiWorker01.CursorBridge[0]
+#       File scritto in .cursor/ai-requests: C:\...\generate-code-2026-01-01-111835.md
+```
+
+## Future Enhancements
+
+### 1. Integrazione LLM Reale
+
+**AiEngine.cs - Integrazione OpenAI:**
+
+```csharp
+private readonly OpenAIClient _openAiClient;
+
+public string GenerateCode(string prompt)
+{
+    var completion = await _openAiClient.GetChatCompletionsAsync(
+        "gpt-4",
+        new ChatMessage[] {
+            new ChatMessage(ChatRole.System, "You are a code generator."),
+            new ChatMessage(ChatRole.User, prompt)
+        }
+    );
+    
+    return completion.Value.Choices[0].Message.Content;
+}
+```
+
+### 2. Context Awareness
+
+```csharp
+public class CodebaseContext
+{
+    public List<string> ProjectFiles { get; set; }
+    public Dictionary<string, string> FileContents { get; set; }
+    public string ProjectStructure { get; set; }
+}
+
+public string GenerateCodeWithContext(string prompt, CodebaseContext context)
+{
+    // Genera codice considerando il contesto del progetto
+}
+```
+
+### 3. Real-Time Cursor Integration
+
+```csharp
+// Websocket per comunicazione real-time
+public class CursorWebSocketBridge
+{
+    public async Task SendPromptToCursor(string prompt)
+    {
+        // Invia prompt direttamente via WebSocket
+    }
+    
+    public async Task<string> ReceiveResponseFromCursor()
+    {
+        // Ricevi risposta da Cursor
+    }
+}
+```
+
+## Troubleshooting
+
+### Problema: Worker AI non risponde
+
+```bash
+# Verifica che sia in esecuzione
+netstat -ano | findstr :5005
+
+# Riavvia worker
+cd IndigoAiWorker01
+dotnet run
+```
+
+### Problema: File Cursor non scritti
+
+```bash
+# Verifica permessi
+# Controlla log worker per path completo
+# Verifica che .cursor/ai-requests/ esista
+```
+
+### Problema: Orchestrator non inoltra a AI Worker
+
+```bash
+# Verifica configurazione workers in Orchestrator
+# Controlla log Orchestrator
+# Test diretto endpoint IndigoAiWorker01
+curl http://localhost:5005/status
+```
+
+## Best Practices
+
+1. **Usa routing selettivo**: instrada task AI solo a IndigoAiWorker01
+2. **Monitora file Cursor**: pulisci periodicamente con `/cursor/cleanup`
+3. **Valida payload**: assicurati che i prompt AI siano chiari
+4. **Log dettagliati**: attiva logging per debugging
+5. **Backup prompt**: salva prompt importanti prima di cleanup
+
+## Conclusione
+
+IndigoAiWorker01 estende il cluster IndigoLab con capacità AI avanzate, integrandosi perfettamente con l'infrastruttura esistente e fornendo un bridge diretto con Cursor per automatizzare lo sviluppo software.
+
+---
+
+**IndigoAiWorker01** - AI-Powered Worker for IndigoLab Cluster v1.0

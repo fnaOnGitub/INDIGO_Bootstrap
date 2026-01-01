@@ -1,0 +1,104 @@
+# Template Scriban per docker-compose.yaml
+# Utilizzato da ClusterBuilder per generare configurazione Docker Compose
+
+version: '3.8'
+
+networks:
+  {{ cluster_name }}_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: {{ network_subnet }}
+
+volumes:
+  rabbitmq_data:
+  redis_data:
+  traefik_certs:
+
+services:
+  # RabbitMQ Message Broker
+  {{~ if communication_broker == "RabbitMQ" ~}}
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: {{ cluster_name }}_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - {{ cluster_name }}_network
+    restart: unless-stopped
+  {{~ end ~}}
+
+  # Redis Cache
+  {{~ if cache_provider == "Redis" ~}}
+  redis:
+    image: redis:7-alpine
+    container_name: {{ cluster_name }}_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - {{ cluster_name }}_network
+    restart: unless-stopped
+  {{~ end ~}}
+
+  # Traefik Reverse Proxy
+  {{~ if use_traefik ~}}
+  traefik:
+    image: traefik:v2.10
+    container_name: {{ cluster_name }}_traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "traefik_certs:/certs"
+    networks:
+      - {{ cluster_name }}_network
+    restart: unless-stopped
+  {{~ end ~}}
+
+  # Agenti generati dinamicamente
+  {{~ for agent in agents ~}}
+  {{ agent.name }}:
+    build:
+      context: ./{{ agent.name }}
+      dockerfile: Dockerfile
+    container_name: {{ cluster_name }}_{{ agent.name }}
+    ports:
+      - "{{ agent.port }}:80"
+    environment:
+      - AGENT_NAME={{ agent.name }}
+      - AGENT_ROLE={{ agent.role }}
+      - LOG_LEVEL={{ agent.log_level }}
+      {{~ for key in agent.environment ~}}
+      - {{ key.name }}={{ key.value }}
+      {{~ end ~}}
+    networks:
+      - {{ cluster_name }}_network
+    depends_on:
+      {{~ if communication_broker == "RabbitMQ" ~}}
+      - rabbitmq
+      {{~ end ~}}
+      {{~ if cache_provider == "Redis" ~}}
+      - redis
+      {{~ end ~}}
+    restart: unless-stopped
+    {{~ if use_traefik ~}}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.{{ agent.name }}.rule=Host(`{{ agent.name }}.localhost`)"
+      - "traefik.http.services.{{ agent.name }}.loadbalancer.server.port=80"
+    {{~ end ~}}
+  {{~ end ~}}

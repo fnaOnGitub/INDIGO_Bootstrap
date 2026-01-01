@@ -1,0 +1,216 @@
+<UserControl x:Class="ControlCenter.UI.Views.DashboardPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ControlCenter.UI.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="950">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20">
+            <!-- Titolo -->
+            <TextBlock Text="Dashboard" Style="{StaticResource TitleTextStyle}" Margin="0,0,0,20"/>
+            
+            <!-- Stato Cluster -->
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,20">
+                <StackPanel>
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Stato Cluster in Tempo Reale" Style="{StaticResource SubtitleTextStyle}" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <TextBlock Text="{Binding LastUpdated, StringFormat='Aggiornato: {0:HH:mm:ss}'}" 
+                                      VerticalAlignment="Center"
+                                      FontSize="12"
+                                      Foreground="Gray"
+                                      Margin="0,0,10,0"/>
+                            <Button Content="⟳ Refresh" 
+                                   Command="{Binding RefreshCommand}"
+                                   Background="{StaticResource IndigoPrimaryBrush}"
+                                   Foreground="White"
+                                   Padding="10,5"
+                                   BorderThickness="0"
+                                   Cursor="Hand"/>
+                        </StackPanel>
+                    </Grid>
+                    
+                    <!-- Indicatore di caricamento -->
+                    <ProgressBar IsIndeterminate="True" 
+                                Height="4" 
+                                Margin="0,0,0,10"
+                                Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                                Foreground="{StaticResource IndigoPrimaryBrush}"/>
+                    
+                    <!-- Lista Agenti -->
+                    <ItemsControl ItemsSource="{Binding Agents}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#E0E0E0" 
+                                       BorderThickness="1" 
+                                       CornerRadius="4" 
+                                       Padding="15"
+                                       Margin="0,0,0,10">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="20"/>
+                                            <ColumnDefinition Width="200"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="200"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Indicatore Health -->
+                                        <Ellipse Grid.Column="0" 
+                                                Width="12" 
+                                                Height="12" 
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,10,0">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <Setter Property="Fill" Value="#F44336"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsHealthy}" Value="True">
+                                                            <Setter Property="Fill" Value="#4CAF50"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
+                                        
+                                        <!-- Nome Agente -->
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" 
+                                                      FontWeight="SemiBold" 
+                                                      FontSize="14"/>
+                                            <TextBlock Text="{Binding Url}" 
+                                                      FontSize="10" 
+                                                      Foreground="Gray"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Status -->
+                                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="15,0">
+                                            <TextBlock Text="Status" FontSize="10" Foreground="Gray"/>
+                                            <TextBlock Text="{Binding Status}" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Uptime -->
+                                        <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                            <TextBlock Text="Uptime" FontSize="10" Foreground="Gray"/>
+                                            <TextBlock Text="{Binding Uptime}" 
+                                                      FontFamily="Consolas" 
+                                                      FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Last Task -->
+                                        <StackPanel Grid.Column="4" VerticalAlignment="Center" Margin="15,0,0,0">
+                                            <TextBlock Text="Last Task" FontSize="10" Foreground="Gray"/>
+                                            <TextBlock Text="{Binding LastTask}" 
+                                                      FontFamily="Consolas" 
+                                                      FontSize="11"
+                                                      TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    
+                    <!-- Messaggio quando non ci sono agenti -->
+                    <TextBlock Text="Nessun agente disponibile. Verificare che Agent.Monitor sia in esecuzione su porta 5004."
+                              TextWrapping="Wrap"
+                              Foreground="Gray"
+                              FontStyle="Italic"
+                              Margin="0,10,0,0"
+                              Visibility="{Binding Agents.Count, Converter={StaticResource ZeroToVisibilityConverter}}"/>
+                </StackPanel>
+            </Border>
+            
+            <!-- Azioni Rapide -->
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="Azioni Rapide" Style="{StaticResource SubtitleTextStyle}" Margin="0,0,0,15"/>
+                    
+                    <WrapPanel>
+                        <Button Content="Provision Servers" 
+                               Command="{Binding ProvisionCommand}"
+                               Background="{StaticResource IndigoPrimaryBrush}"
+                               Foreground="White"
+                               Padding="20,10"
+                               Margin="0,0,10,10"
+                               BorderThickness="0"
+                               Cursor="Hand"/>
+                        
+                        <Button Content="Build Cluster" 
+                               Command="{Binding BuildClusterCommand}"
+                               Background="{StaticResource IndigoPrimaryBrush}"
+                               Foreground="White"
+                               Padding="20,10"
+                               Margin="0,0,10,10"
+                               BorderThickness="0"
+                               Cursor="Hand"/>
+                        
+                        <Button Content="Generate Agents" 
+                               Command="{Binding GenerateAgentsCommand}"
+                               Background="{StaticResource IndigoPrimaryBrush}"
+                               Foreground="White"
+                               Padding="20,10"
+                               Margin="0,0,10,10"
+                               BorderThickness="0"
+                               Cursor="Hand"/>
+                        
+                        <Button Content="Validate" 
+                               Command="{Binding ValidateCommand}"
+                               Background="{StaticResource IndigoOrangeBrush}"
+                               Foreground="White"
+                               Padding="20,10"
+                               Margin="0,0,10,10"
+                               BorderThickness="0"
+                               Cursor="Hand"/>
+                        
+                        <Button Content="Deploy All" 
+                               Command="{Binding DeployCommand}"
+                               Background="{StaticResource IndigoCyanBrush}"
+                               Foreground="White"
+                               Padding="20,10"
+                               Margin="0,0,10,10"
+                               BorderThickness="0"
+                               Cursor="Hand"/>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+            
+            <!-- Log Viewer -->
+            <Border Style="{StaticResource CardBorderStyle}">
+                <StackPanel>
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock Text="Log" Style="{StaticResource SubtitleTextStyle}" VerticalAlignment="Center"/>
+                        <Button Content="Pulisci Log" 
+                               Command="{Binding ClearLogsCommand}"
+                               HorizontalAlignment="Right"
+                               Background="Transparent"
+                               BorderBrush="{StaticResource IndigoDarkBrush}"
+                               Padding="10,5"
+                               Cursor="Hand"/>
+                    </Grid>
+                    
+                    <Border Background="#F9F9F9" 
+                           BorderBrush="{StaticResource IndigoDarkBrush}" 
+                           BorderThickness="1" 
+                           MaxHeight="300">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <ItemsControl ItemsSource="{Binding Logs}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" 
+                                                  FontFamily="Consolas" 
+                                                  FontSize="11" 
+                                                  Padding="5,2"
+                                                  TextWrapping="Wrap"/>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,44 @@
+@Agent.Worker02_HostAddress = http://localhost:5003
+
+### Health Check
+GET {{Agent.Worker02_HostAddress}}/health
+
+###
+
+### Get Status
+GET {{Agent.Worker02_HostAddress}}/status
+
+###
+
+### Execute Task - Process Data
+POST {{Agent.Worker02_HostAddress}}/execute
+Content-Type: application/json
+
+{
+  "Task": "process-data",
+  "Payload": "{ \"records\": 2000, \"type\": \"batch\" }"
+}
+
+###
+
+### Execute Task - Compute
+POST {{Agent.Worker02_HostAddress}}/execute
+Content-Type: application/json
+
+{
+  "Task": "compute-stats",
+  "Payload": "{ \"dataset\": \"sales-2026\", \"metrics\": [\"avg\", \"sum\", \"max\"] }"
+}
+
+###
+
+### Execute Task - Transform
+POST {{Agent.Worker02_HostAddress}}/execute
+Content-Type: application/json
+
+{
+  "Task": "transform-data",
+  "Payload": "{ \"input\": \"raw-2.csv\", \"output\": \"clean-2.json\" }"
+}
+
+###

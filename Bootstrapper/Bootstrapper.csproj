@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- PowerShell Remoting & WinRM -->
+    <PackageReference Include="System.Management.Automation" Version="7.4.1" />
+    
+    <!-- Docker SDK -->
+    <PackageReference Include="Docker.DotNet" Version="3.125.15" />
+    
+    <!-- YAML Configuration -->
+    <PackageReference Include="YamlDotNet" Version="16.2.1" />
+    
+    <!-- Templating Engine -->
+    <PackageReference Include="Scriban" Version="5.11.0" />
+    
+    <!-- Logging -->
+    <PackageReference Include="Serilog" Version="4.1.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    
+    <!-- HTTP Server for LocalApiServer -->
+    <PackageReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Config\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Esclude i file .cs dei template dalla compilazione -->
+    <Compile Remove="Templates\**\*.cs" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,78 @@
+### IndigoAiWorker01 - AI Worker Test Endpoints
+### Porta: 5005
+
+###
+### GET /health - Health check
+GET http://localhost:5005/health
+
+###
+### GET /status - Status AI Worker
+GET http://localhost:5005/status
+
+###
+### POST /execute - Generate Code
+POST http://localhost:5005/execute
+Content-Type: application/json
+
+{
+  "Task": "generate-code",
+  "Payload": "Crea una classe User con proprietà Id, Name, Email e metodo ValidateEmail"
+}
+
+###
+### POST /execute - Refactor Code
+POST http://localhost:5005/execute
+Content-Type: application/json
+
+{
+  "Task": "refactor-code",
+  "Payload": "public void ProcessData() { var x = 10; if (x > 5) { Console.WriteLine(x); } else { Console.WriteLine('small'); } }"
+}
+
+###
+### POST /execute - Explain Code
+POST http://localhost:5005/execute
+Content-Type: application/json
+
+{
+  "Task": "explain-code",
+  "Payload": "public async Task<List<User>> GetUsersAsync() { return await _db.Users.Where(u => u.IsActive).ToListAsync(); }"
+}
+
+###
+### POST /execute - Create Component
+POST http://localhost:5005/execute
+Content-Type: application/json
+
+{
+  "Task": "create-component",
+  "Payload": "Logger middleware per ASP.NET Core che logga Request method, path, status code e response time"
+}
+
+###
+### POST /execute - Fix Snippet
+POST http://localhost:5005/execute
+Content-Type: application/json
+
+{
+  "Task": "fix-snippet",
+  "Payload": "var users = GetUsers(); foreach(var user in users) { if(user.Name == null) Console.WriteLine(user.Name); }"
+}
+
+###
+### POST /execute - Cursor Prompt (Direct Write)
+POST http://localhost:5005/execute
+Content-Type: application/json
+
+{
+  "Task": "cursor-prompt",
+  "Payload": "Crea una nuova pagina WPF per visualizzare statistiche del cluster IndigoLab con grafici in tempo reale"
+}
+
+###
+### GET /cursor/bridge-files - Lista file CursorBridge
+GET http://localhost:5005/cursor/bridge-files
+
+###
+### POST /cursor/cleanup - Cleanup file vecchi
+POST http://localhost:5005/cursor/cleanup

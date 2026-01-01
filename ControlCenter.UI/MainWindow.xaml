@@ -1,0 +1,82 @@
+<Window x:Class="ControlCenter.UI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ControlCenter.UI"
+        mc:Ignorable="d"
+        Title="Indigo Control Center" Height="800" Width="1200"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource IndigoLightGrayBrush}">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="200"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        
+        <!-- Menu laterale -->
+        <Border Grid.Column="0" Background="{StaticResource IndigoDarkBrush}">
+            <StackPanel Margin="0,20,0,0">
+                <!-- Logo/Titolo -->
+                <TextBlock Text="INDIGO LAB" 
+                          FontSize="20" 
+                          FontWeight="Bold" 
+                          Foreground="White" 
+                          Margin="20,0,20,30"
+                          HorizontalAlignment="Center"/>
+                
+                <!-- Pulsanti di navigazione -->
+                <Button x:Name="BtnDashboard" 
+                       Content="Dashboard" 
+                       Click="BtnDashboard_Click"
+                       Style="{StaticResource {x:Type Button}}"
+                       Background="{StaticResource IndigoPrimaryBrush}"
+                       Foreground="White"
+                       BorderThickness="0"
+                       Padding="20,12"
+                       Margin="10,5"
+                       FontSize="14"
+                       Cursor="Hand"/>
+                
+                <Button x:Name="BtnAgents" 
+                       Content="Agents" 
+                       Click="BtnAgents_Click"
+                       Style="{StaticResource {x:Type Button}}"
+                       Background="Transparent"
+                       Foreground="White"
+                       BorderThickness="0"
+                       Padding="20,12"
+                       Margin="10,5"
+                       FontSize="14"
+                       Cursor="Hand"/>
+                
+                <Button x:Name="BtnDocumentation" 
+                       Content="Documentation" 
+                       Click="BtnDocumentation_Click"
+                       Style="{StaticResource {x:Type Button}}"
+                       Background="Transparent"
+                       Foreground="White"
+                       BorderThickness="0"
+                       Padding="20,12"
+                       Margin="10,5"
+                       FontSize="14"
+                       Cursor="Hand"/>
+                
+                <Button x:Name="BtnAbout" 
+                       Content="About" 
+                       Click="BtnAbout_Click"
+                       Style="{StaticResource {x:Type Button}}"
+                       Background="Transparent"
+                       Foreground="White"
+                       BorderThickness="0"
+                       Padding="20,12"
+                       Margin="10,5"
+                       FontSize="14"
+                       Cursor="Hand"/>
+            </StackPanel>
+        </Border>
+        
+        <!-- Area contenuto -->
+        <ContentControl x:Name="ContentArea" Grid.Column="1" Margin="24"/>
+    </Grid>
+</Window>

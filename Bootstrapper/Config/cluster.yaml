@@ -1,0 +1,45 @@
+# Configurazione cluster IndigoLab
+# Define gli agenti, rete, comunicazione
+
+clusterName: indigo-cluster
+
+# Definizione agenti
+agents:
+  - name: agent-orchestrator
+    type: orchestrator
+    port: 5001
+    environment:
+      LOG_LEVEL: Information
+      AGENT_ROLE: orchestrator
+
+  - name: agent-worker-01
+    type: worker
+    port: 5002
+    environment:
+      LOG_LEVEL: Information
+      AGENT_ROLE: worker
+
+  - name: agent-worker-02
+    type: worker
+    port: 5003
+    environment:
+      LOG_LEVEL: Information
+      AGENT_ROLE: worker
+
+  - name: agent-monitor
+    type: monitor
+    port: 5004
+    environment:
+      LOG_LEVEL: Debug
+      AGENT_ROLE: monitor
+
+# Configurazione rete Docker
+network:
+  subnetCidr: 172.20.0.0/16
+  useTraefik: true
+
+# Configurazione comunicazione
+communication:
+  messageBroker: RabbitMQ  # RabbitMQ o Kafka
+  cacheProvider: Redis
+  useJwt: true

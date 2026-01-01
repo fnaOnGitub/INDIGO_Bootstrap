@@ -1,0 +1,18 @@
+### Agent.Monitor - Test Endpoints
+### Porta: 5004
+
+###
+### GET /health - Health check del Monitor
+GET http://localhost:5004/health
+
+###
+### GET /status - Status del Monitor
+GET http://localhost:5004/status
+
+###
+### GET /cluster/health - Health check del cluster
+GET http://localhost:5004/cluster/health
+
+###
+### GET /cluster/status - Status del cluster
+GET http://localhost:5004/cluster/status

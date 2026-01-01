@@ -1,0 +1,70 @@
+<UserControl x:Class="ControlCenter.UI.Views.DocumentationPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ControlCenter.UI.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="950">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="20">
+            <!-- Titolo -->
+            <TextBlock Text="Documentation" Style="{StaticResource TitleTextStyle}" Margin="0,0,0,20"/>
+            
+            <!-- Indicatore di caricamento -->
+            <ProgressBar IsIndeterminate="True" 
+                        Height="4" 
+                        Margin="0,0,0,20"
+                        Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}"
+                        Foreground="{StaticResource IndigoPrimaryBrush}"/>
+            
+            <!-- Messaggio di stato -->
+            <TextBlock Text="{Binding StatusMessage}" 
+                      Margin="0,0,0,15"
+                      FontStyle="Italic"
+                      Foreground="Gray"/>
+            
+            <!-- Lista Documenti -->
+            <ItemsControl ItemsSource="{Binding Documents}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,15">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <!-- Icona -->
+                                <TextBlock Grid.Column="0" 
+                                          Text="📄" 
+                                          FontSize="32" 
+                                          VerticalAlignment="Center"
+                                          Margin="0,0,15,0"/>
+                                
+                                <!-- Info Documento -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,5"/>
+                                    <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Foreground="Gray"/>
+                                </StackPanel>
+                                
+                                <!-- Pulsante Apri -->
+                                <Button Grid.Column="2" 
+                                       Content="Apri" 
+                                       Click="OpenButton_Click"
+                                       Tag="{Binding}"
+                                       Background="{StaticResource IndigoPrimaryBrush}"
+                                       Foreground="White"
+                                       Padding="15,8"
+                                       BorderThickness="0"
+                                       VerticalAlignment="Center"
+                                       Cursor="Hand"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
