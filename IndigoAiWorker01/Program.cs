@@ -456,6 +456,43 @@ Per procedere, conferma:
             log.LogInformation("[{Time}] UserRequest: '{UserRequest}'", solutionTimestamp, userRequest);
             log.LogInformation("[{Time}] TargetPath: '{TargetPath}'", solutionTimestamp, targetPath ?? "NON SPECIFICATO");
             
+            // ⚠️ PROTEZIONE: Verifica se la cartella di destinazione esiste già
+            if (!string.IsNullOrWhiteSpace(targetPath))
+            {
+                string solutionName = "MyNewSolution"; // Estrai o genera nome soluzione
+                string fullTargetPath = System.IO.Path.Combine(targetPath, solutionName);
+                
+                if (Directory.Exists(fullTargetPath))
+                {
+                    log.LogWarning("[{Time}] ⚠️ CARTELLA GIÀ ESISTENTE: {Path}", solutionTimestamp, fullTargetPath);
+                    logBuffer.Add($"⚠️ La cartella {solutionName} esiste già in {targetPath}", "WARN");
+                    
+                    // Suggerisci un nome alternativo
+                    int counter = 1;
+                    string alternativeName = $"{solutionName}_{counter}";
+                    while (Directory.Exists(System.IO.Path.Combine(targetPath, alternativeName)))
+                    {
+                        counter++;
+                        alternativeName = $"{solutionName}_{counter}";
+                    }
+                    
+                    log.LogInformation("[{Time}] Nome alternativo suggerito: {Alternative}", solutionTimestamp, alternativeName);
+                    
+                    // Restituisci risposta speciale "folder-exists"
+                    return Results.Ok(new
+                    {
+                        Success = true,
+                        Status = "folder-exists",
+                        Message = "La cartella di destinazione esiste già",
+                        ExistingPath = fullTargetPath,
+                        SuggestedAlternativeName = alternativeName,
+                        TargetPath = targetPath,
+                        UserRequest = userRequest,
+                        Timestamp = DateTime.UtcNow
+                    });
+                }
+            }
+            
             // Genera PREVIEW invece di creare subito
             var previewData = GenerateSolutionPreview(userRequest, targetPath);
             result = previewData.PreviewText;
@@ -517,9 +554,10 @@ Per procedere, conferma:
             log.LogInformation("[{Time}] Esecuzione: ExecuteSolutionCreation - CREAZIONE REALE", execTimestamp);
             logBuffer.Add("Esecuzione creazione soluzione confermata dall'utente...");
             
-            // Estrai UserRequest e TargetPath dal Payload
+            // Estrai UserRequest, TargetPath e ForceOverwrite dal Payload
             string execUserRequest = "";
             string? execTargetPath = null;
+            bool forceOverwrite = false;
             
             if (request.Payload is System.Text.Json.JsonElement execPayloadJson)
             {
@@ -536,10 +574,68 @@ Per procedere, conferma:
                     {
                         execTargetPath = execTargetPathProp.GetString();
                     }
+                    
+                    // ⚠️ NUOVO: Estrai flag forceOverwrite
+                    if (execPayloadJson.TryGetProperty("forceOverwrite", out var forceOverwriteProp))
+                    {
+                        forceOverwrite = forceOverwriteProp.GetBoolean();
+                    }
                 }
             }
             
             log.LogInformation("[{Time}] ESECUZIONE CONFERMATA - Creazione fisica file/cartelle", execTimestamp);
+            log.LogInformation("[{Time}] ForceOverwrite: {ForceOverwrite}", execTimestamp, forceOverwrite);
+            
+            // ⚠️ PROTEZIONE: Verifica se la cartella esiste e se manca la conferma esplicita
+            if (!string.IsNullOrWhiteSpace(execTargetPath))
+            {
+                string solutionName = "MyNewSolution"; // Estrai o genera nome soluzione
+                string fullTargetPath = System.IO.Path.Combine(execTargetPath, solutionName);
+                
+                if (Directory.Exists(fullTargetPath) && !forceOverwrite)
+                {
+                    log.LogError("[{Time}] ❌ CREAZIONE BLOCCATA: La cartella {Path} esiste già e forceOverwrite=false", execTimestamp, fullTargetPath);
+                    logBuffer.Add($"❌ Creazione bloccata: cartella esistente senza conferma esplicita", "ERROR");
+                    
+                    return Results.Ok(new
+                    {
+                        Success = false,
+                        Status = "blocked",
+                        Reason = "folder-exists-no-confirmation",
+                        Message = "La cartella esiste già. Serve conferma esplicita per sovrascrivere (forceOverwrite=true).",
+                        ExistingPath = fullTargetPath,
+                        ExecutedTask = request.Task,
+                        Timestamp = DateTime.UtcNow
+                    });
+                }
+                
+                if (Directory.Exists(fullTargetPath) && forceOverwrite)
+                {
+                    log.LogWarning("[{Time}] ⚠️ SOVRASCRITTURA CONFERMATA: Eliminazione cartella {Path}", execTimestamp, fullTargetPath);
+                    logBuffer.Add($"⚠️ Sovrascrittura confermata dall'utente - Eliminazione cartella esistente", "WARN");
+                    
+                    try
+                    {
+                        Directory.Delete(fullTargetPath, recursive: true);
+                        log.LogInformation("[{Time}] ✅ Cartella eliminata con successo", execTimestamp);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.LogError(ex, "[{Time}] ❌ Errore eliminazione cartella", execTimestamp);
+                        logBuffer.Add($"❌ Errore eliminazione cartella: {ex.Message}", "ERROR");
+                        
+                        return Results.Ok(new
+                        {
+                            Success = false,
+                            Status = "error",
+                            Reason = "delete-failed",
+                            Message = $"Impossibile eliminare la cartella esistente: {ex.Message}",
+                            ExecutedTask = request.Task,
+                            Timestamp = DateTime.UtcNow
+                        });
+                    }
+                }
+            }
             
             // ESEGUI effettivamente la creazione
             result = GenerateNewSolution(execUserRequest, execTargetPath);

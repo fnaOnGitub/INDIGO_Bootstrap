@@ -585,6 +585,23 @@ public partial class NaturalLanguageViewModel : ObservableObject
             // Invia task per generare preview
             var previewResponse = await _client.DispatchTaskAsync("", taskName, originalPayload, targetPath);
 
+            // ⚠️ NUOVO: Gestisci risposta "folder-exists"
+            if (previewResponse?.Status == "folder-exists")
+            {
+                _timelineService.AddStep(
+                    "⚠️ Cartella esistente rilevata",
+                    "La cartella di destinazione contiene già una soluzione",
+                    TimelineStepType.Info
+                );
+                UpdateCurrentStepDisplay();
+                await Task.Delay(300);
+
+                // Mostra dialog per gestire conflitto
+                await HandleFolderExistsConflictAsync(previewResponse, taskName, originalPayload, targetPath);
+                IsExecuting = false;
+                return;
+            }
+
             if (previewResponse?.Success == true)
             {
                 _timelineService.AddStep(
@@ -626,7 +643,7 @@ public partial class NaturalLanguageViewModel : ObservableObject
     /// <summary>
     /// Gestisce la conferma finale dopo la preview
     /// </summary>
-    private async Task HandlePreviewConfirmationAsync(string operationType, string originalPayload, string? targetPath, string operationDescription)
+    private async Task HandlePreviewConfirmationAsync(string operationType, string originalPayload, string? targetPath, string operationDescription, bool forceOverwrite = false)
     {
         // Crea preview data (in futuro sarà estratto dalla risposta del Worker)
         var previewData = new Views.PreviewData
@@ -714,7 +731,7 @@ public partial class NaturalLanguageViewModel : ObservableObject
             await Task.Delay(300);
 
             // ESEGUI l'operazione reale
-            var executeResponse = await _client.DispatchTaskAsync("", executeTaskName, originalPayload, targetPath);
+            var executeResponse = await _client.DispatchTaskAsync("", executeTaskName, originalPayload, targetPath, forceOverwrite);
 
             if (executeResponse?.Success == true)
             {
@@ -891,6 +908,95 @@ public partial class NaturalLanguageViewModel : ObservableObject
         catch
         {
             return "";
+        }
+    }
+
+    /// <summary>
+    /// Gestisce il conflitto quando la cartella di destinazione esiste già
+    /// </summary>
+    private async Task HandleFolderExistsConflictAsync(dynamic folderExistsResponse, string taskName, string originalPayload, string? targetPath)
+    {
+        try
+        {
+            string existingPath = folderExistsResponse.ExistingPath ?? "Percorso sconosciuto";
+            string suggestedAlternativeName = folderExistsResponse.SuggestedAlternativeName ?? "MyNewSolution_1";
+
+            // Mostra dialog per gestire conflitto
+            var dialog = new Views.FolderExistsDialog(existingPath, suggestedAlternativeName);
+            var result = dialog.ShowDialog();
+
+            if (result == true)
+            {
+                switch (dialog.UserAction)
+                {
+                    case Views.FolderExistsAction.Overwrite:
+                        // L'utente ha confermato la sovrascrittura
+                        _timelineService.AddStep(
+                            "🔥 Sovrascrittura confermata",
+                            "L'utente ha confermato la sovrascrittura della cartella esistente",
+                            TimelineStepType.Info
+                        );
+                        UpdateCurrentStepDisplay();
+                        await Task.Delay(300);
+
+                        // Vai direttamente alla preview (il controllo folder-exists è già stato fatto)
+                        var taskDescription = "Creazione soluzione con sovrascrittura";
+                        await HandlePreviewConfirmationAsync(taskName, originalPayload, targetPath, taskDescription, forceOverwrite: true);
+                        break;
+
+                    case Views.FolderExistsAction.UseDifferentName:
+                        // L'utente ha scelto un nome diverso
+                        _timelineService.AddStep(
+                            "✏️ Nome alternativo selezionato",
+                            $"Nuovo nome: {dialog.NewSolutionName}",
+                            TimelineStepType.Info
+                        );
+                        UpdateCurrentStepDisplay();
+                        await Task.Delay(300);
+
+                        // TODO: Implementare creazione con nome diverso
+                        _timelineService.AddStep(
+                            "⚠️ Funzionalità in sviluppo",
+                            "La creazione con nome diverso sarà disponibile nella prossima versione",
+                            TimelineStepType.Info
+                        );
+                        UpdateCurrentStepDisplay();
+                        CurrentStatus = "✅ Pronto ad eseguire il tuo comando";
+                        break;
+
+                    case Views.FolderExistsAction.Cancel:
+                        _timelineService.AddStep(
+                            "❌ Operazione annullata",
+                            "L'utente ha annullato la creazione per evitare sovrascrittura",
+                            TimelineStepType.Info
+                        );
+                        UpdateCurrentStepDisplay();
+                        CurrentStatus = "✅ Pronto ad eseguire il tuo comando";
+                        break;
+                }
+            }
+            else
+            {
+                // Dialog chiuso senza scelta
+                _timelineService.AddStep(
+                    "❌ Operazione annullata",
+                    "L'utente ha chiuso il dialog senza scegliere",
+                    TimelineStepType.Info
+                );
+                UpdateCurrentStepDisplay();
+                CurrentStatus = "✅ Pronto ad eseguire il tuo comando";
+            }
+        }
+        catch (Exception ex)
+        {
+            _timelineService.AddStep(
+                "❌ Errore",
+                $"Errore gestione conflitto: {ex.Message}",
+                TimelineStepType.Error
+            );
+            UpdateCurrentStepDisplay();
+            CurrentStatus = "❌ Errore gestione conflitto cartella";
+            System.Diagnostics.Debug.WriteLine($"Errore HandleFolderExistsConflictAsync: {ex}");
         }
     }
 }

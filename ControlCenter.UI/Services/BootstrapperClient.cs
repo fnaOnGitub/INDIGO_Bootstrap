@@ -246,7 +246,7 @@ public class BootstrapperClient
     /// <summary>
     /// POST http://localhost:5001/dispatch - Invia task all'Orchestrator
     /// </summary>
-    public async Task<DispatchResponse> DispatchTaskAsync(string agentName, string task, string payload, string? targetPath = null)
+    public async Task<DispatchResponse> DispatchTaskAsync(string agentName, string task, string payload, string? targetPath = null, bool forceOverwrite = false)
     {
         try
         {
@@ -257,8 +257,9 @@ public class BootstrapperClient
             {
                 payloadObject = new
                 {
-                    UserRequest = payload,
-                    TargetPath = targetPath
+                    userRequest = payload,           // ⚠️ Usa camelCase
+                    targetPath = targetPath,         // ⚠️ Usa camelCase
+                    forceOverwrite = forceOverwrite  // ⚠️ NUOVO: Flag sovrascrittura
                 };
             }
             else
@@ -355,6 +356,13 @@ public class DispatchResponse
     public System.Text.Json.JsonElement? WorkerResult { get; set; }
     public bool RequiresUserConfirmation { get; set; }
     public ProposalData? ProposalData { get; set; }
+    
+    // ⚠️ NUOVO: Campi per gestione folder-exists
+    public string? Status { get; set; }
+    public string? ExistingPath { get; set; }
+    public string? SuggestedAlternativeName { get; set; }
+    public string? TargetPath { get; set; }
+    public string? UserRequest { get; set; }
 }
 
 /// <summary>

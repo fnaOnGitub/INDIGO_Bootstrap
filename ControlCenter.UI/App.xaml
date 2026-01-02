@@ -5,18 +5,24 @@
              xmlns:converters="clr-namespace:ControlCenter.UI.Converters"
              StartupUri="Views/NaturalLanguageWindow.xaml">
     <Application.Resources>
-        <!-- Converters -->
-        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
-        <converters:ZeroToVisibilityConverter x:Key="ZeroToVisibilityConverter"/>
+        <ResourceDictionary>
+            <!-- ⭐ CONSOLE THEME - Tema tecnico moderno -->
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Themes/ConsoleTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            
+            <!-- Converters -->
+            <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+            <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+            <converters:ZeroToVisibilityConverter x:Key="ZeroToVisibilityConverter"/>
         
-        <!-- Colori IndigoLab -->
-        <SolidColorBrush x:Key="IndigoPrimaryBrush" Color="#4B0082"/>
-        <SolidColorBrush x:Key="IndigoDarkBrush" Color="#2E004F"/>
-        <SolidColorBrush x:Key="IndigoLightGrayBrush" Color="#F3F3F3"/>
-        <SolidColorBrush x:Key="IndigoWhiteBrush" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="IndigoOrangeBrush" Color="#FF7A00"/>
-        <SolidColorBrush x:Key="IndigoCyanBrush" Color="#00B7C3"/>
+        <!-- Colori Legacy (compatibilità) - SOSTITUITI DA CONSOLE THEME -->
+        <SolidColorBrush x:Key="IndigoPrimaryBrush" Color="#06B6D4"/><!-- Era #4B0082 viola, ora cyan -->
+        <SolidColorBrush x:Key="IndigoDarkBrush" Color="#111827"/><!-- Era #2E004F viola, ora panel -->
+        <SolidColorBrush x:Key="IndigoLightGrayBrush" Color="#1E293B"/><!-- Era #F3F3F3 chiaro, ora scuro -->
+        <SolidColorBrush x:Key="IndigoWhiteBrush" Color="#E5E7EB"/><!-- Era #FFFFFF, ora text -->
+        <SolidColorBrush x:Key="IndigoOrangeBrush" Color="#F97316"/><!-- Mantieni arancione -->
+        <SolidColorBrush x:Key="IndigoCyanBrush" Color="#06B6D4"/><!-- Mantieni cyan -->
         
         <!-- Stili Base -->
         <Style x:Key="TitleTextStyle" TargetType="TextBlock">
@@ -37,5 +43,18 @@
             <Setter Property="CornerRadius" Value="8"/>
             <Setter Property="Padding" Value="16"/>
         </Style>
+        
+        <!-- ⭐ STILI GLOBALI PER LEGGIBILITÀ -->
+        <Style TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Inter, Segoe UI"/>
+            <Setter Property="Foreground" Value="{StaticResource ConsoleTextBrush}"/>
+        </Style>
+        
+        <Style TargetType="TextBox">
+            <Setter Property="FontFamily" Value="Inter, Segoe UI"/>
+            <Setter Property="Foreground" Value="{StaticResource ConsoleTextBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

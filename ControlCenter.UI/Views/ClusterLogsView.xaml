@@ -5,43 +5,13 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="800"
-             Background="#1E1E2E">
+             Background="{StaticResource ConsoleBackgroundBrush}">
     
+    <!-- ⚠️ Usa stili Console Theme -->
     <UserControl.Resources>
-        <Style x:Key="LogEntryTextBlockStyle" TargetType="TextBlock">
-            <Setter Property="FontFamily" Value="Consolas"/>
-            <Setter Property="FontSize" Value="11"/>
-            <Setter Property="Foreground" Value="#CDD6F4"/>
+        <Style x:Key="LogEntryTextBlockStyle" TargetType="TextBlock" BasedOn="{StaticResource ConsoleMonoText}">
             <Setter Property="TextWrapping" Value="Wrap"/>
             <Setter Property="Padding" Value="5,2"/>
-        </Style>
-        
-        <Style x:Key="AgentButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#313244"/>
-            <Setter Property="Foreground" Value="#CDD6F4"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="15,10"/>
-            <Setter Property="Margin" Value="5"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FontSize" Value="13"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}"
-                                CornerRadius="6"
-                                Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" 
-                                            VerticalAlignment="Center"/>
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#45475A"/>
-                </Trigger>
-            </Style.Triggers>
         </Style>
     </UserControl.Resources>
     
@@ -56,60 +26,44 @@
         <!-- Header -->
         <StackPanel Grid.Row="0" Margin="0,0,0,15">
             <TextBlock Text="📊 Cluster Logs" 
-                       FontSize="24" 
-                       FontWeight="Bold" 
-                       Foreground="#89DCEB"
+                       Style="{StaticResource ConsoleTitleText}"
+                       Foreground="{StaticResource AccentCyanBrush}"
                        Margin="0,0,0,5"/>
             <TextBlock Text="Log in tempo reale degli agenti del cluster" 
-                       FontSize="13" 
-                       Foreground="#BAC2DE"/>
+                       Style="{StaticResource ConsoleLabelText}"/>
         </StackPanel>
         
         <!-- Agent Selector -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
             <TextBlock Text="Agente:" 
                        VerticalAlignment="Center"
-                       Foreground="#CDD6F4"
+                       Foreground="{StaticResource ConsoleTextBrush}"
                        Margin="0,0,10,0"/>
             
             <Button x:Name="OrchestratorButton"
                     Content="🎯 Orchestrator" 
-                    Style="{StaticResource AgentButtonStyle}"
+                    Style="{StaticResource ConsoleButton}"
                     Click="SelectAgent_Click"
                     Tag="Orchestrator"/>
             
             <Button x:Name="IndigoAiWorker01Button"
                     Content="🤖 AI Worker" 
-                    Style="{StaticResource AgentButtonStyle}"
+                    Style="{StaticResource ConsoleButton}"
                     Click="SelectAgent_Click"
                     Tag="IndigoAiWorker01"/>
             
             <Button x:Name="SystemButton"
                     Content="⚙️ System" 
-                    Style="{StaticResource AgentButtonStyle}"
+                    Style="{StaticResource ConsoleButton}"
                     Click="SelectAgent_Click"
                     Tag="System"/>
         </StackPanel>
         
         <!-- Log Display -->
         <Border Grid.Row="2" 
-                Background="#181825" 
-                CornerRadius="8" 
-                BorderThickness="1"
-                BorderBrush="#313244">
+                Style="{StaticResource ConsolePanelStyle}">
             <TextBox x:Name="LogTextBox"
-                     IsReadOnly="True"
-                     TextWrapping="Wrap"
-                     VerticalScrollBarVisibility="Auto"
-                     HorizontalScrollBarVisibility="Auto"
-                     AcceptsReturn="True"
-                     IsReadOnlyCaretVisible="True"
-                     FontFamily="Consolas"
-                     FontSize="12"
-                     Background="#181825"
-                     Foreground="#CDD6F4"
-                     BorderThickness="0"
-                     Padding="10"
+                     Style="{StaticResource ConsoleLogTextBox}"
                      MinHeight="400"/>
         </Border>
         

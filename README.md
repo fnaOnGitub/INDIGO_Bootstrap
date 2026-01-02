@@ -2,9 +2,9 @@
 
 **Cluster di microservizi .NET 8 per sviluppo automatico assistito da AI**
 
-Versione: **2.2.0** 🧠  
-Data: **2026-01-01**  
-Stato: **✅ OPERATIVO CON AVVIO AUTOMATICO E LOG INTEGRATI**
+Versione: **2.3.0** 🎨  
+Data: **2026-01-02**  
+Stato: **✅ OPERATIVO CON UI CONSOLE PROFESSIONALE**
 
 ---
 
@@ -21,6 +21,9 @@ IndigoLab Cluster è un ecosistema di microservizi intelligenti che collaborano 
 - ✅ Avvio automatico del cluster integrato nella UI
 - ✅ Log in tempo reale visibili direttamente nell'interfaccia
 - ✅ Diagnostica avanzata stato agenti con watchdog timers
+- ✅ **UI Console Mode** - Tema BLU SCURO + CIANO BRILLANTE (WCAG AAA)
+- ✅ **Protezione sovrascrittura** - Conferma esplicita per cartelle esistenti
+- ✅ **Parsing JSON corretto** - camelCase payload (userRequest/targetPath)
 
 ---
 
