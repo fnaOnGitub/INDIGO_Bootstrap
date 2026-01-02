@@ -246,14 +246,30 @@ public class BootstrapperClient
     /// <summary>
     /// POST http://localhost:5001/dispatch - Invia task all'Orchestrator
     /// </summary>
-    public async Task<DispatchResponse> DispatchTaskAsync(string agentName, string task, string payload)
+    public async Task<DispatchResponse> DispatchTaskAsync(string agentName, string task, string payload, string? targetPath = null)
     {
         try
         {
+            // Se c'è un targetPath, crea un payload strutturato, altrimenti usa il payload come stringa
+            object payloadObject;
+            
+            if (!string.IsNullOrEmpty(targetPath))
+            {
+                payloadObject = new
+                {
+                    UserRequest = payload,
+                    TargetPath = targetPath
+                };
+            }
+            else
+            {
+                payloadObject = payload;
+            }
+
             var requestBody = new
             {
                 Task = task,
-                Payload = payload
+                Payload = payloadObject
             };
 
             var content = JsonContent.Create(requestBody);
@@ -337,4 +353,17 @@ public class DispatchResponse
     public string? WorkerType { get; set; }
     public bool IsAiTask { get; set; }
     public System.Text.Json.JsonElement? WorkerResult { get; set; }
+    public bool RequiresUserConfirmation { get; set; }
+    public ProposalData? ProposalData { get; set; }
+}
+
+/// <summary>
+/// Dati del proposal per conferma utente
+/// </summary>
+public class ProposalData
+{
+    public List<string> Features { get; set; } = new();
+    public string ProposedStructure { get; set; } = "";
+    public List<string> Modules { get; set; } = new();
+    public string ProposalText { get; set; } = "";
 }

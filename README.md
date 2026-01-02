@@ -2,9 +2,9 @@
 
 **Cluster di microservizi .NET 8 per sviluppo automatico assistito da AI**
 
-Versione: **2.1.0** 🧠  
+Versione: **2.2.0** 🧠  
 Data: **2026-01-01**  
-Stato: **✅ OPERATIVO E AUTONOMO CON INTELLIGENT AI ROUTING**
+Stato: **✅ OPERATIVO CON AVVIO AUTOMATICO E LOG INTEGRATI**
 
 ---
 
@@ -18,6 +18,9 @@ IndigoLab Cluster è un ecosistema di microservizi intelligenti che collaborano 
 - ✅ Reagire a eventi e generare nuovi task
 - ✅ Dialogare con l'utente quando necessario
 - ✅ Completare cicli di sviluppo senza intervento manuale
+- ✅ Avvio automatico del cluster integrato nella UI
+- ✅ Log in tempo reale visibili direttamente nell'interfaccia
+- ✅ Diagnostica avanzata stato agenti con watchdog timers
 
 ---
 
@@ -243,14 +246,36 @@ Ogni task AI produce un file standardizzato:
 
 ---
 
-### 7. **Control Center UI** (WPF .NET 8)
+### 7. **Control Center UI** (WPF .NET 8) ⭐ AGGIORNATO v2.2
 
 **Tipo**: Dashboard & Management UI  
 **Ruolo**: Visualizzazione e controllo cluster
 
-**Caratteristiche:**
-- **Dashboard**: Visualizzazione stato 6 agenti (ora con CursorMonitorAgent)
-- **Agents Page**: Gestione agenti
+**Caratteristiche v2.2:**
+- **🚀 Avvio Automatico Cluster**: Gli agenti partono automaticamente all'apertura della UI
+- **📊 Dashboard con Stato Real-Time**: 
+  - Visualizzazione stato 6 agenti con indicatori colorati (🟢🟡🔴⚫)
+  - Stati: NotStarted, Starting, Running, Crashed
+  - Diagnostica dettagliata (ultimo output, contatori log/errori)
+  - Pulsanti: Avvia Cluster, Ferma Cluster, Aggiorna
+- **📋 Cluster Logs View**: Vista dedicata per log di tutti gli agenti
+  - Log in tempo reale catturati da stdout/stderr
+  - Selezionabili e copiabili (Ctrl+C)
+  - Filtro per agente (System, Orchestrator, AI Worker)
+  - TextBox con scroll e word-wrap
+- **💬 Natural Language Console**: Interfaccia linguaggio naturale
+  - Pannello log integrato espandibile
+  - Timeline con step del workflow
+  - Modalità PREVIEW (anteprima modifiche prima dell'esecuzione)
+  - Modalità EXPLAIN (spiegazione dettagliata di ogni step)
+- **🎛️ Gestione Processi in Background**:
+  - `ClusterProcessManager`: Avvio/stop agenti senza finestre esterne
+  - `ProcessStartInfo` con `CreateNoWindow=true`, `RedirectStandardOutput/Error=true`
+  - Cattura stdout/stderr in tempo reale
+  - Watchdog timers per rilevare crash immediati
+- **📁 Configurazione Persistente**:
+  - `ConfigService`: Salvataggio percorso predefinito per soluzioni
+  - File `ControlCenterConfig.json` con `DefaultSolutionPath`
 - **Agent Details Window**:
   - Test agent (GET /health)
   - Dispatch task (POST /dispatch via Orchestrator)
@@ -270,6 +295,7 @@ Ogni task AI produce un file standardizzato:
 - Material Design
 - HttpClient per comunicazione API
 - DispatcherTimer per auto-refresh
+- System.Diagnostics.Process per gestione agenti background
 
 ---
 
@@ -377,7 +403,37 @@ Un task viene classificato come **AI Task** se soddisfa almeno uno dei seguenti 
 - Windows 10/11
 - PowerShell
 
-### Avvio Manuale (6 terminali)
+### ⭐ Avvio Automatico (RACCOMANDATO)
+
+**Nuovo in v2.2**: Il cluster si avvia automaticamente!
+
+```powershell
+# Avvia SOLO il Control Center
+cd ControlCenter.UI
+dotnet run
+
+# Il Control Center avvierà automaticamente:
+# - Orchestrator (5001)
+# - IndigoAiWorker01 (5005)
+# Tutti in background, senza finestre esterne!
+```
+
+**Vantaggi:**
+- ✅ Nessuna finestra PowerShell esterna
+- ✅ Log integrati nella UI (selezionabili e copiabili)
+- ✅ Diagnostica in tempo reale con stati dettagliati
+- ✅ Avvio con un solo comando
+
+**Come verificare:**
+1. Apri Control Center
+2. Vai su **Dashboard**
+3. Controlla sezione **"⚙️ Stato Workers"**
+4. Attendi che tutti gli indicatori diventino 🟢 **ATTIVO**
+5. Vai su **"📊 Cluster Logs"** per vedere i log in tempo reale
+
+---
+
+### Avvio Manuale (6 terminali) - Solo per sviluppo
 
 ```powershell
 # Terminal 1 - Orchestrator

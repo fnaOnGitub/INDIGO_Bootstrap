@@ -30,6 +30,12 @@ public partial class MainWindow : Window
         UpdateActiveButton(BtnAgents);
     }
 
+    private void BtnClusterLogs_Click(object sender, RoutedEventArgs e)
+    {
+        NavigateTo(new ClusterLogsView());
+        UpdateActiveButton(BtnClusterLogs);
+    }
+
     private void BtnDocumentation_Click(object sender, RoutedEventArgs e)
     {
         NavigateTo(new DocumentationPage());
@@ -50,7 +56,7 @@ public partial class MainWindow : Window
     private void UpdateActiveButton(Button activeButton)
     {
         // Reset tutti i pulsanti
-        var buttons = new[] { BtnDashboard, BtnAgents, BtnDocumentation, BtnAbout };
+        var buttons = new[] { BtnDashboard, BtnAgents, BtnClusterLogs, BtnDocumentation, BtnAbout };
         foreach (var btn in buttons)
         {
             btn.Background = Brushes.Transparent;

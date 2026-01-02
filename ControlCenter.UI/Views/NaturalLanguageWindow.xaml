@@ -19,6 +19,7 @@
         <converters:StepTypeToColorConverter x:Key="StepTypeToColorConverter"/>
         <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
         <converters:BoolToColorConverter x:Key="BoolToColorConverter"/>
+        <converters:LogLevelToBrushConverter x:Key="LogLevelToBrushConverter"/>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
         
         <!-- Stile per card moderne -->
@@ -164,6 +165,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
@@ -338,8 +340,125 @@
                         </StackPanel>
                     </Border>
 
+                    <!-- Pannello Log in Tempo Reale -->
+                    <Expander Grid.Row="4" 
+                              Header="📊 Log Cluster (Tempo Reale)" 
+                              IsExpanded="True"
+                              Margin="0,0,0,12">
+                        <Expander.HeaderTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                              Text="{Binding}" 
+                                              FontSize="14" 
+                                              FontWeight="SemiBold" 
+                                              Foreground="#4B0082"/>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <Ellipse Width="8" Height="8" 
+                                                Fill="#10B981" 
+                                                Margin="8,0,0,0"
+                                                ToolTip="Aggiornamento automatico attivo">
+                                            <Ellipse.Triggers>
+                                                <EventTrigger RoutedEvent="Loaded">
+                                                    <BeginStoryboard>
+                                                        <Storyboard RepeatBehavior="Forever">
+                                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                           From="1" To="0.2" Duration="0:0:1.5"
+                                                                           AutoReverse="True"/>
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </Ellipse.Triggers>
+                                        </Ellipse>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </Expander.HeaderTemplate>
+                        <Border Background="#1E1E2E" 
+                                CornerRadius="6" 
+                                BorderBrush="#313244"
+                                BorderThickness="1"
+                                Margin="0,8,0,0">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                
+                                <!-- Selettore agente -->
+                                <Border Grid.Row="0" 
+                                       Background="#181825"
+                                       Padding="8">
+                                    <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Agente:" 
+                                              Foreground="#CDD6F4" 
+                                              FontSize="11"
+                                              VerticalAlignment="Center"
+                                              Margin="0,0,8,0"/>
+                                    <Button x:Name="BtnLogSystem"
+                                           Content="System" 
+                                           Click="SelectLogAgent_Click"
+                                           Tag="System"
+                                           Background="#6366F1"
+                                           Foreground="White"
+                                           Padding="8,4"
+                                           Margin="2"
+                                           FontSize="10"
+                                           BorderThickness="0"
+                                           Cursor="Hand"/>
+                                    <Button x:Name="BtnLogOrchestrator"
+                                           Content="Orchestrator" 
+                                           Click="SelectLogAgent_Click"
+                                           Tag="Orchestrator"
+                                           Background="#313244"
+                                           Foreground="#CDD6F4"
+                                           Padding="8,4"
+                                           Margin="2"
+                                           FontSize="10"
+                                           BorderThickness="0"
+                                           Cursor="Hand"/>
+                                    <Button x:Name="BtnLogAiWorker"
+                                           Content="AI Worker" 
+                                           Click="SelectLogAgent_Click"
+                                           Tag="IndigoAiWorker01"
+                                           Background="#313244"
+                                           Foreground="#CDD6F4"
+                                           Padding="8,4"
+                                           Margin="2"
+                                           FontSize="10"
+                                           BorderThickness="0"
+                                           Cursor="Hand"/>
+                                    </StackPanel>
+                                </Border>
+                                
+                                <!-- Area log -->
+                                <TextBox Grid.Row="1"
+                                        x:Name="LogTextBox"
+                                        IsReadOnly="True"
+                                        TextWrapping="Wrap"
+                                        VerticalScrollBarVisibility="Auto"
+                                        HorizontalScrollBarVisibility="Auto"
+                                        AcceptsReturn="True"
+                                        IsReadOnlyCaretVisible="True"
+                                        FontFamily="Consolas"
+                                        FontSize="11"
+                                        Background="#1E1E2E"
+                                        Foreground="#CDD6F4"
+                                        BorderThickness="0"
+                                        Padding="8"
+                                        MinHeight="250"
+                                        MaxHeight="400"
+                                        Margin="8"/>
+                            </Grid>
+                        </Border>
+                    </Expander>
+                    
                     <!-- Stato generale -->
-                    <Border Grid.Row="4" 
+                    <Border Grid.Row="5" 
                             Background="#F9F9F9" 
                             Padding="16" 
                             CornerRadius="8"

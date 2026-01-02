@@ -16,6 +16,7 @@ public partial class NaturalLanguageViewModel : ObservableObject
     private readonly TimelineService _timelineService;
     private readonly HealthCheckService _healthCheck;
     private readonly AutoRecoveryService _autoRecovery;
+    private readonly ConfigService _configService;
 
     [ObservableProperty]
     private string _userInput = "";
@@ -55,6 +56,7 @@ public partial class NaturalLanguageViewModel : ObservableObject
         _timelineService = new TimelineService();
         _healthCheck = new HealthCheckService();
         _autoRecovery = new AutoRecoveryService(_healthCheck);
+        _configService = new ConfigService();
 
         // Verifica Orchestrator all'avvio
         _ = InitializeOrchestratorAsync();
@@ -217,6 +219,76 @@ public partial class NaturalLanguageViewModel : ObservableObject
 
             if (response?.Success == true)
             {
+                // Estrai RequiresUserConfirmation e ProposalData da WorkerResult
+                bool requiresConfirmation = false;
+                ProposalData? proposalData = null;
+
+                if (response.WorkerResult != null)
+                {
+                    var workerResultJson = (System.Text.Json.JsonElement)response.WorkerResult;
+                    
+                    // Verifica se richiede conferma utente
+                    if (workerResultJson.TryGetProperty("RequiresUserConfirmation", out var confirmProp))
+                    {
+                        requiresConfirmation = confirmProp.GetBoolean();
+                    }
+
+                    // Estrai ProposalData se presente
+                    if (requiresConfirmation && workerResultJson.TryGetProperty("ProposalData", out var proposalProp))
+                    {
+                        proposalData = new ProposalData
+                        {
+                            Features = new List<string>(),
+                            ProposedStructure = "",
+                            Modules = new List<string>(),
+                            ProposalText = ""
+                        };
+
+                        if (proposalProp.TryGetProperty("Features", out var featuresProp))
+                        {
+                            foreach (var feature in featuresProp.EnumerateArray())
+                            {
+                                proposalData.Features.Add(feature.GetString() ?? "");
+                            }
+                        }
+
+                        if (proposalProp.TryGetProperty("ProposedStructure", out var structProp))
+                        {
+                            proposalData.ProposedStructure = structProp.GetString() ?? "";
+                        }
+
+                        if (proposalProp.TryGetProperty("Modules", out var modulesProp))
+                        {
+                            foreach (var module in modulesProp.EnumerateArray())
+                            {
+                                proposalData.Modules.Add(module.GetString() ?? "");
+                            }
+                        }
+
+                        if (proposalProp.TryGetProperty("ProposalText", out var textProp))
+                        {
+                            proposalData.ProposalText = textProp.GetString() ?? "";
+                        }
+                    }
+                }
+
+                // Verifica se richiede conferma utente
+                if (requiresConfirmation && proposalData != null)
+                {
+                    _timelineService.AddStep(
+                        "⏸️ Conferma richiesta",
+                        "Il sistema richiede la tua conferma per procedere",
+                        TimelineStepType.Dialog
+                    );
+                    UpdateCurrentStepDisplay();
+                    CurrentStatus = "⏸️ In attesa di conferma utente...";
+                    IsExecuting = false;
+
+                    // Mostra dialog di conferma
+                    await HandleUserConfirmationAsync(proposalData, UserInput);
+                    return;
+                }
+
                 // Step 5: Classificazione
                 var workerType = response.WorkerType ?? "Unknown";
                 var isAiTask = response.IsAiTask;
@@ -428,5 +500,397 @@ public partial class NaturalLanguageViewModel : ObservableObject
             return text;
 
         return text.Substring(0, maxLength) + "...";
+    }
+
+    /// <summary>
+    /// Gestisce la conferma utente per creazione soluzione
+    /// </summary>
+    private async Task HandleUserConfirmationAsync(ProposalData proposalData, string originalPayload)
+    {
+        // STEP 1: Mostra dialog di conferma iniziale
+        var dialog = new Views.SolutionConfirmationDialog(proposalData, originalPayload, _configService);
+        
+        // Sottoscrivi all'evento ExplainRequested
+        dialog.ExplainRequested += async (sender, e) =>
+        {
+            await HandleExplainRequestAsync("initial-confirmation", "create-new-solution", originalPayload);
+        };
+        
+        var dialogResult = dialog.ShowDialog();
+
+        if (dialogResult == true)
+        {
+            var userChoice = dialog.UserChoice;
+            string taskName = "";
+            string taskDescription = "";
+            string? targetPath = null;
+
+            switch (userChoice)
+            {
+                case Views.UserChoice.CreateNewSolution:
+                    taskName = "create-new-solution";
+                    taskDescription = "Generazione anteprima modifiche";
+                    targetPath = dialog.SelectedTargetPath;
+                    break;
+
+                case Views.UserChoice.AddToCurrentSolution:
+                    taskName = "add-project-to-current-solution";
+                    taskDescription = "Generazione anteprima modifiche";
+                    break;
+
+                case Views.UserChoice.Cancel:
+                    _timelineService.AddStep(
+                        "❌ Operazione annullata",
+                        "L'utente ha annullato la creazione della soluzione",
+                        TimelineStepType.Info
+                    );
+                    UpdateCurrentStepDisplay();
+                    CurrentStatus = "✅ Pronto ad eseguire il tuo comando";
+                    return;
+            }
+
+            // L'utente ha confermato, genera PREVIEW
+            IsExecuting = true;
+            CurrentStatus = $"🔍 {taskDescription}";
+
+            // STEP 2: Genera anteprima modifiche
+            _timelineService.AddStep(
+                "🔍 Generazione anteprima",
+                "Preparazione preview delle modifiche da applicare",
+                TimelineStepType.Processing
+            );
+            UpdateCurrentStepDisplay();
+            await Task.Delay(300);
+
+            // Se c'è un targetPath, aggiorna la timeline
+            if (!string.IsNullOrEmpty(targetPath))
+            {
+                _timelineService.AddStep(
+                    "📁 Percorso selezionato",
+                    $"Percorso: {targetPath}",
+                    TimelineStepType.Info
+                );
+                UpdateCurrentStepDisplay();
+                await Task.Delay(300);
+
+                _timelineService.AddStep(
+                    "💾 Percorso salvato",
+                    "Il percorso è stato salvato in configurazione",
+                    TimelineStepType.Success
+                );
+                UpdateCurrentStepDisplay();
+                await Task.Delay(300);
+            }
+
+            // Invia task per generare preview
+            var previewResponse = await _client.DispatchTaskAsync("", taskName, originalPayload, targetPath);
+
+            if (previewResponse?.Success == true)
+            {
+                _timelineService.AddStep(
+                    "✅ Anteprima generata",
+                    "Preview delle modifiche pronta",
+                    TimelineStepType.Success
+                );
+                UpdateCurrentStepDisplay();
+                await Task.Delay(300);
+
+                // STEP 3: Mostra preview dialog con conferma finale
+                await HandlePreviewConfirmationAsync(taskName, originalPayload, targetPath, taskDescription);
+            }
+            else
+            {
+                _timelineService.AddStep(
+                    "❌ Errore",
+                    previewResponse?.Message ?? "Errore durante generazione preview",
+                    TimelineStepType.Error
+                );
+                UpdateCurrentStepDisplay();
+                CurrentStatus = "❌ Errore durante generazione preview";
+                IsExecuting = false;
+            }
+        }
+        else
+        {
+            // L'utente ha annullato o chiuso il dialog
+            _timelineService.AddStep(
+                "❌ Operazione annullata",
+                "L'utente ha annullato la creazione della soluzione",
+                TimelineStepType.Info
+            );
+            UpdateCurrentStepDisplay();
+            CurrentStatus = "✅ Pronto ad eseguire il tuo comando";
+        }
+    }
+
+    /// <summary>
+    /// Gestisce la conferma finale dopo la preview
+    /// </summary>
+    private async Task HandlePreviewConfirmationAsync(string operationType, string originalPayload, string? targetPath, string operationDescription)
+    {
+        // Crea preview data (in futuro sarà estratto dalla risposta del Worker)
+        var previewData = new Views.PreviewData
+        {
+            FilesToCreate = new List<string>
+            {
+                "README.md",
+                "src/Core/.gitkeep",
+                "src/Infrastructure/.gitkeep",
+                "src/Api/Controllers/.gitkeep",
+                "src/Models/.gitkeep",
+                "tests/UnitTests/.gitkeep"
+            },
+            FoldersToCreate = new List<string>
+            {
+                targetPath ?? "MyNewSolution",
+                "src",
+                "src/Core",
+                "src/Infrastructure",
+                "src/Api",
+                "src/Api/Controllers",
+                "src/Models",
+                "tests",
+                "tests/UnitTests"
+            },
+            FinalStructure = @"📁 MyNewSolution/
+├── 📁 src/
+│   ├── 📁 Core/
+│   ├── 📁 Infrastructure/
+│   ├── 📁 Api/
+│   │   └── 📁 Controllers/
+│   └── 📁 Models/
+├── 📁 tests/
+│   └── 📁 UnitTests/
+└── 📄 README.md",
+            TechnicalDetails = $"Operazione: {operationType}\nPercorso: {targetPath}\nDescrizione: {operationDescription}",
+            OperationType = operationType
+        };
+
+        _timelineService.AddStep(
+            "⏸️ Conferma PREVIEW richiesta",
+            "Verifica le modifiche prima di procedere",
+            TimelineStepType.Dialog
+        );
+        UpdateCurrentStepDisplay();
+        CurrentStatus = "⏸️ In attesa conferma PREVIEW...";
+        IsExecuting = false;
+
+        // Mostra preview dialog
+        var previewDialog = new Views.PreviewDialog(previewData);
+        
+        // Sottoscrivi all'evento ExplainRequested
+        previewDialog.ExplainRequested += async (sender, e) =>
+        {
+            await HandleExplainRequestAsync("preview", operationType, originalPayload);
+        };
+        
+        var previewResult = previewDialog.ShowDialog();
+
+        if (previewResult == true && previewDialog.UserChoice == Views.UserPreviewChoice.Proceed)
+        {
+            // Utente ha confermato, ESEGUI l'operazione
+            IsExecuting = true;
+            
+            _timelineService.AddStep(
+                "▶️ Esecuzione confermata",
+                "Inizio creazione fisica dei file",
+                TimelineStepType.Info
+            );
+            UpdateCurrentStepDisplay();
+            CurrentStatus = $"▶️ Esecuzione: {operationDescription}";
+            await Task.Delay(500);
+
+            // Determina il task di esecuzione basato sull'operazione
+            string executeTaskName = operationType == "create-new-solution" 
+                ? "execute-solution-creation" 
+                : "execute-project-addition";
+
+            _timelineService.AddStep(
+                "🔨 Creazione in corso",
+                "Scrittura file e cartelle sul disco",
+                TimelineStepType.Processing
+            );
+            UpdateCurrentStepDisplay();
+            await Task.Delay(300);
+
+            // ESEGUI l'operazione reale
+            var executeResponse = await _client.DispatchTaskAsync("", executeTaskName, originalPayload, targetPath);
+
+            if (executeResponse?.Success == true)
+            {
+                _timelineService.AddStep(
+                    "✅ Operazione completata",
+                    $"Soluzione creata con successo in {targetPath}",
+                    TimelineStepType.Success
+                );
+                UpdateCurrentStepDisplay();
+                CurrentStatus = "✅ Operazione completata con successo!";
+            }
+            else
+            {
+                _timelineService.AddStep(
+                    "❌ Errore",
+                    executeResponse?.Message ?? "Errore durante esecuzione",
+                    TimelineStepType.Error
+                );
+                UpdateCurrentStepDisplay();
+                CurrentStatus = "❌ Errore durante esecuzione";
+            }
+
+            IsExecuting = false;
+        }
+        else
+        {
+            // Utente ha annullato la preview
+            _timelineService.AddStep(
+                "❌ Operazione annullata",
+                "L'utente ha annullato dopo aver visto la preview",
+                TimelineStepType.Info
+            );
+            UpdateCurrentStepDisplay();
+            CurrentStatus = "✅ Pronto ad eseguire il tuo comando";
+        }
+    }
+
+    /// <summary>
+    /// Gestisce la richiesta di spiegazione per uno step
+    /// </summary>
+    private async Task HandleExplainRequestAsync(string stepId, string stepType, string userRequest)
+    {
+        _timelineService.AddStep(
+            "💬 Spiegazione richiesta",
+            $"Generazione spiegazione per '{stepType}'",
+            TimelineStepType.Info
+        );
+        UpdateCurrentStepDisplay();
+        
+        // Prepara il payload per explain-step
+        var explainPayload = new
+        {
+            StepId = stepId,
+            StepType = stepType,
+            UserRequest = userRequest,
+            Context = new
+            {
+                Timestamp = DateTime.Now,
+                Source = "Control Center UI"
+            }
+        };
+
+        // Invia richiesta di spiegazione all'Orchestrator
+        var explainResponse = await _client.DispatchTaskAsync("", "explain-step", 
+            System.Text.Json.JsonSerializer.Serialize(explainPayload));
+
+        if (explainResponse?.Success == true && explainResponse.WorkerResult != null)
+        {
+            _timelineService.AddStep(
+                "📘 Spiegazione ricevuta",
+                "Spiegazione dettagliata disponibile",
+                TimelineStepType.Success
+            );
+            UpdateCurrentStepDisplay();
+
+            // Estrai i dati della spiegazione dal WorkerResult
+            var explanationData = ExtractExplanationData(explainResponse.WorkerResult, stepId, stepType);
+
+            // Mostra dialog di spiegazione
+            var explainDialog = new Views.ExplainDialog(explanationData);
+            explainDialog.ShowDialog();
+        }
+        else
+        {
+            _timelineService.AddStep(
+                "❌ Errore spiegazione",
+                "Impossibile generare la spiegazione",
+                TimelineStepType.Error
+            );
+            UpdateCurrentStepDisplay();
+
+            MessageBox.Show(
+                "Impossibile generare la spiegazione. Riprova più tardi.",
+                "Errore",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error
+            );
+        }
+    }
+
+    /// <summary>
+    /// Estrae i dati della spiegazione dal WorkerResult
+    /// </summary>
+    private Views.ExplanationData ExtractExplanationData(object workerResult, string stepId, string stepType)
+    {
+        try
+        {
+            if (workerResult is System.Text.Json.JsonElement json)
+            {
+                // Estrai il risultato testuale completo
+                string explanationText = "";
+                if (json.TryGetProperty("Result", out var resultProp))
+                {
+                    explanationText = resultProp.GetString() ?? "";
+                }
+
+                // Parsing semplificato: usa il testo markdown generato
+                // In una versione più avanzata, potresti parsare il markdown per estrarre le sezioni
+                return new Views.ExplanationData
+                {
+                    NarrativeExplanation = ExtractSection(explanationText, "## 📖 Spiegazione", "## 🔧"),
+                    TechnicalReason = ExtractSection(explanationText, "## 🔧 Motivazione tecnica", "## 🔗"),
+                    Dependencies = ExtractSection(explanationText, "## 🔗 Dipendenze", "## ⚡"),
+                    ImpactIfConfirm = ExtractSection(explanationText, "**Se confermi:**", "**Se annulli:**"),
+                    ImpactIfCancel = ExtractSection(explanationText, "**Se annulli:**", "## 🔀"),
+                    Alternatives = ExtractSection(explanationText, "## 🔀 Alternative possibili", "## 📚"),
+                    FullTechnicalDetails = ExtractSection(explanationText, "## 📚 Dettagli tecnici completi", "## 💡"),
+                    StepId = stepId,
+                    StepType = stepType
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Errore estrazione explanation data: {ex.Message}");
+        }
+
+        // Fallback
+        return new Views.ExplanationData
+        {
+            NarrativeExplanation = "Spiegazione non disponibile",
+            TechnicalReason = "Dettagli tecnici non disponibili",
+            Dependencies = "Dipendenze non disponibili",
+            ImpactIfConfirm = "Impatto non disponibile",
+            ImpactIfCancel = "Impatto non disponibile",
+            Alternatives = "Alternative non disponibili",
+            FullTechnicalDetails = "Dettagli completi non disponibili",
+            StepId = stepId,
+            StepType = stepType
+        };
+    }
+
+    /// <summary>
+    /// Estrae una sezione da un testo markdown
+    /// </summary>
+    private string ExtractSection(string text, string startMarker, string endMarker)
+    {
+        try
+        {
+            var startIndex = text.IndexOf(startMarker);
+            if (startIndex == -1) return "";
+
+            startIndex += startMarker.Length;
+            var endIndex = text.IndexOf(endMarker, startIndex);
+            if (endIndex == -1) endIndex = text.Length;
+
+            var section = text.Substring(startIndex, endIndex - startIndex).Trim();
+            
+            // Rimuovi eventuali separatori markdown
+            section = section.Replace("---", "").Trim();
+            
+            return section;
+        }
+        catch
+        {
+            return "";
+        }
     }
 }

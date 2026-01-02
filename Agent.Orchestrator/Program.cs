@@ -271,9 +271,36 @@ app.MapGet("/logs", (LogBuffer logBuffer) =>
 // POST /dispatch - Riceve task e lo inoltra a un worker (routing intelligente)
 app.MapPost("/dispatch", async (DispatchRequest request, AgentState state, LogBuffer logBuffer, ILogger<Program> log) =>
 {
+    // Helper per convertire Payload in stringa per analisi
+    string GetPayloadAsString(object? payload)
+    {
+        if (payload == null) return "";
+        if (payload is string str) return str;
+        if (payload is System.Text.Json.JsonElement json)
+        {
+            // Se è una stringa JSON, estraila direttamente
+            if (json.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                return json.GetString() ?? "";
+            }
+            
+            // Se è un oggetto con UserRequest, estrailo
+            if (json.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                if (json.TryGetProperty("UserRequest", out var userReq))
+                    return userReq.GetString() ?? "";
+            }
+            
+            return json.ToString();
+        }
+        return payload.ToString() ?? "";
+    }
+    
+    var payloadForAnalysis = GetPayloadAsString(request.Payload);
+    
     log.LogInformation("Dispatch ricevuto: Task='{Task}', Payload length={Length}", 
         request.Task, 
-        request.Payload?.Length ?? 0);
+        payloadForAnalysis?.Length ?? 0);
     
     // Log evento
     logBuffer.Add($"Task ricevuto: {request.Task}");
@@ -282,8 +309,8 @@ app.MapPost("/dispatch", async (DispatchRequest request, AgentState state, LogBu
     state.UpdateLastCommand(request.Task);
     
     // Determina il worker appropriato (AI o standard) con analisi intelligente
-    var workerUrl = GetWorkerForTask(request.Task, request.Payload);
-    var isAiTask = IsAiTask(request.Task, request.Payload);
+    var workerUrl = GetWorkerForTask(request.Task, payloadForAnalysis);
+    var isAiTask = IsAiTask(request.Task, payloadForAnalysis);
     var workerType = isAiTask ? "AI-Worker" : "Standard-Worker";
     log.LogInformation("Task inoltrato a {WorkerType}: {WorkerUrl}", workerType, workerUrl);
     
@@ -381,7 +408,11 @@ app.Run();
 /// <summary>
 /// Modello per richiesta dispatch
 /// </summary>
-public record DispatchRequest(string Task, string Payload);
+public class DispatchRequest
+{
+    public string Task { get; set; } = "";
+    public object? Payload { get; set; } // Può essere string o oggetto strutturato
+}
 
 /// <summary>
 /// Modello per risposta dal worker
@@ -393,4 +424,19 @@ public class WorkerResponse
     public string Result { get; set; } = "";
     public string ExecutedTask { get; set; } = "";
     public DateTime Timestamp { get; set; }
+    
+    // ⭐ NEW: Campi per User Confirmation Flow
+    public bool RequiresUserConfirmation { get; set; }
+    public ProposalData? ProposalData { get; set; }
+}
+
+/// <summary>
+/// Modello per proposal data
+/// </summary>
+public class ProposalData
+{
+    public List<string> Features { get; set; } = new();
+    public string ProposedStructure { get; set; } = "";
+    public List<string> Modules { get; set; } = new();
+    public string ProposalText { get; set; } = "";
 }

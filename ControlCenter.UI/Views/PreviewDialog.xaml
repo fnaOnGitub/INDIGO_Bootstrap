@@ -1,0 +1,207 @@
+<Window x:Class="ControlCenter.UI.Views.PreviewDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="🔍 Anteprima Modifiche" 
+        Height="700" 
+        Width="900"
+        WindowStartupLocation="CenterScreen"
+        Background="#1E1E2E"
+        Foreground="White"
+        ResizeMode="CanResize">
+    
+    <Window.Resources>
+        <!-- Style per i titoli delle sezioni -->
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#CDD6F4"/>
+            <Setter Property="Margin" Value="0,15,0,8"/>
+        </Style>
+        
+        <!-- Style per le liste -->
+        <Style x:Key="ItemListStyle" TargetType="ItemsControl">
+            <Setter Property="Margin" Value="10,0,0,0"/>
+        </Style>
+        
+        <!-- Style per i pulsanti -->
+        <Style x:Key="ButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="45"/>
+            <Setter Property="MinWidth" Value="150"/>
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                CornerRadius="8"
+                                BorderThickness="0">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="0.8"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="🔍 Anteprima Modifiche" 
+                       FontSize="24" 
+                       FontWeight="Bold" 
+                       Foreground="#A6E3A1"
+                       Margin="0,0,0,10"/>
+            <TextBlock Text="Verifica le modifiche che verranno applicate prima di procedere" 
+                       FontSize="13" 
+                       Foreground="#BAC2DE"
+                       TextWrapping="Wrap"/>
+        </StackPanel>
+        
+        <!-- Content Area -->
+        <ScrollViewer Grid.Row="1" 
+                      VerticalScrollBarVisibility="Auto"
+                      Margin="0,0,0,20">
+            <StackPanel>
+                <!-- File che verranno creati -->
+                <TextBlock Text="📁 File che verranno creati" 
+                           Style="{StaticResource SectionTitleStyle}"/>
+                <ItemsControl x:Name="FilesToCreateList" 
+                              Style="{StaticResource ItemListStyle}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" 
+                                       Foreground="#A6E3A1" 
+                                       Margin="0,2"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                
+                <!-- Cartelle che verranno create -->
+                <TextBlock Text="🗂️ Cartelle che verranno create" 
+                           Style="{StaticResource SectionTitleStyle}"/>
+                <ItemsControl x:Name="FoldersToCreateList" 
+                              Style="{StaticResource ItemListStyle}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" 
+                                       Foreground="#89B4FA" 
+                                       Margin="0,2"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                
+                <!-- File che verranno modificati -->
+                <TextBlock x:Name="FilesToModifyTitle"
+                           Text="✏️ File che verranno modificati" 
+                           Style="{StaticResource SectionTitleStyle}"
+                           Visibility="Collapsed"/>
+                <ItemsControl x:Name="FilesToModifyList" 
+                              Style="{StaticResource ItemListStyle}"
+                              Visibility="Collapsed">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" 
+                                       Foreground="#F9E2AF" 
+                                       Margin="0,2"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                
+                <!-- File che verranno rimossi -->
+                <TextBlock x:Name="FilesToRemoveTitle"
+                           Text="🗑️ File che verranno rimossi" 
+                           Style="{StaticResource SectionTitleStyle}"
+                           Visibility="Collapsed"/>
+                <ItemsControl x:Name="FilesToRemoveList" 
+                              Style="{StaticResource ItemListStyle}"
+                              Visibility="Collapsed">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}" 
+                                       Foreground="#F38BA8" 
+                                       Margin="0,2"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                
+                <!-- Struttura finale prevista -->
+                <TextBlock Text="🧱 Struttura finale prevista" 
+                           Style="{StaticResource SectionTitleStyle}"/>
+                <Border Background="#181825" 
+                        CornerRadius="8" 
+                        Padding="15"
+                        Margin="0,8,0,0">
+                    <TextBlock x:Name="FinalStructureTextBlock" 
+                               FontFamily="Consolas" 
+                               FontSize="12"
+                               Foreground="#CDD6F4"
+                               TextWrapping="Wrap"/>
+                </Border>
+                
+                <!-- Dettagli tecnici (collassabile) -->
+                <Expander Header="🔧 Mostra dettagli tecnici" 
+                          Foreground="#BAC2DE"
+                          Margin="0,20,0,0"
+                          FontSize="14">
+                    <Border Background="#181825" 
+                            CornerRadius="8" 
+                            Padding="15"
+                            Margin="0,10,0,0">
+                        <TextBlock x:Name="TechnicalDetailsTextBlock" 
+                                   FontFamily="Consolas" 
+                                   FontSize="11"
+                                   Foreground="#A6ADC8"
+                                   TextWrapping="Wrap"/>
+                    </Border>
+                </Expander>
+            </StackPanel>
+        </ScrollViewer>
+        
+        <!-- Action Buttons -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <Button Grid.Column="0"
+                    Content="❓ Perché?" 
+                    Background="#89DCEB" 
+                    Foreground="#1E1E2E"
+                    Style="{StaticResource ButtonStyle}"
+                    Click="Explain_Click"
+                    ToolTip="Spiega perché sto facendo questa azione"/>
+            
+            <Button Grid.Column="2"
+                    Content="❌ Annulla" 
+                    Background="#F38BA8" 
+                    Foreground="#1E1E2E"
+                    Style="{StaticResource ButtonStyle}"
+                    Click="Cancel_Click"/>
+            
+            <Button Grid.Column="3"
+                    Content="▶️ Procedi" 
+                    Background="#A6E3A1" 
+                    Foreground="#1E1E2E"
+                    Style="{StaticResource ButtonStyle}"
+                    Click="Proceed_Click"/>
+        </Grid>
+    </Grid>
+</Window>

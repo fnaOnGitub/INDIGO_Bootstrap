@@ -50,6 +50,18 @@
                        FontSize="14"
                        Cursor="Hand"/>
                 
+                <Button x:Name="BtnClusterLogs" 
+                       Content="📊 Cluster Logs" 
+                       Click="BtnClusterLogs_Click"
+                       Style="{StaticResource {x:Type Button}}"
+                       Background="Transparent"
+                       Foreground="White"
+                       BorderThickness="0"
+                       Padding="20,12"
+                       Margin="10,5"
+                       FontSize="14"
+                       Cursor="Hand"/>
+                
                 <Button x:Name="BtnDocumentation" 
                        Content="Documentation" 
                        Click="BtnDocumentation_Click"

@@ -11,6 +11,127 @@
             <!-- Titolo -->
             <TextBlock Text="Dashboard" Style="{StaticResource TitleTextStyle}" Margin="0,0,0,20"/>
             
+            <!-- Stato Workers -->
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,20">
+                <StackPanel>
+                    <Grid Margin="0,0,0,15">
+                        <TextBlock Text="⚙️ Stato Workers" Style="{StaticResource SubtitleTextStyle}" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button x:Name="BtnRefreshWorkers"
+                                    Content="🔄 Aggiorna" 
+                                    Click="RefreshWorkers_Click"
+                                    Background="#6366F1"
+                                    Foreground="White"
+                                    Padding="10,6"
+                                    Margin="5,0"
+                                    FontSize="12"
+                                    BorderThickness="0"
+                                    Cursor="Hand"/>
+                            
+                            <Button x:Name="BtnStartCluster"
+                                    Content="▶️ Avvia" 
+                                    Click="StartCluster_Click"
+                                    Background="#10B981"
+                                    Foreground="White"
+                                    Padding="10,6"
+                                    Margin="5,0"
+                                    FontSize="12"
+                                    BorderThickness="0"
+                                    Cursor="Hand"/>
+                            
+                            <Button x:Name="BtnStopCluster"
+                                    Content="⏹️ Ferma" 
+                                    Click="StopCluster_Click"
+                                    Background="#EF4444"
+                                    Foreground="White"
+                                    Padding="10,6"
+                                    Margin="5,0"
+                                    FontSize="12"
+                                    BorderThickness="0"
+                                    Cursor="Hand"/>
+                        </StackPanel>
+                    </Grid>
+                    
+                    <!-- Status generale -->
+                    <TextBlock x:Name="ClusterStatusText"
+                               Text="⏳ Avvio automatico in corso..." 
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,15"
+                               Foreground="#F59E0B"
+                               FontSize="13"
+                               FontWeight="SemiBold"/>
+                    
+                    <!-- Lista Workers -->
+                    <ItemsControl x:Name="WorkersItemsControl">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#E5E7EB" 
+                                       BorderThickness="1" 
+                                       CornerRadius="6" 
+                                       Padding="12"
+                                       Margin="0,0,0,8"
+                                       Background="White">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Indicatore stato -->
+                                        <Ellipse Grid.Column="0" 
+                                                Width="10" 
+                                                Height="10" 
+                                                VerticalAlignment="Center"
+                                                Margin="0,0,12,0"
+                                                Fill="{Binding StatusColor}"/>
+                                        
+                                        <!-- Nome Worker -->
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" 
+                                                      FontWeight="SemiBold" 
+                                                      FontSize="13"/>
+                                            <TextBlock Text="{Binding Description}" 
+                                                      FontSize="11" 
+                                                      Foreground="#6B7280"
+                                                      Margin="0,2,0,0"/>
+                                            <TextBlock Text="{Binding DiagnosticInfo}" 
+                                                      FontSize="10" 
+                                                      FontFamily="Consolas"
+                                                      Foreground="#9CA3AF"
+                                                      Margin="0,3,0,0"
+                                                      TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Status Badge -->
+                                        <Border Grid.Column="2"
+                                               Background="{Binding StatusBadgeBackground}"
+                                               CornerRadius="12"
+                                               Padding="10,4"
+                                               Margin="0,0,12,0"
+                                               VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding StatusText}" 
+                                                      FontSize="11"
+                                                      FontWeight="SemiBold"
+                                                      Foreground="{Binding StatusBadgeForeground}"/>
+                                        </Border>
+                                        
+                                        <!-- Porta -->
+                                        <TextBlock Grid.Column="3"
+                                                  Text="{Binding Port, StringFormat=':{0}'}" 
+                                                  FontSize="12"
+                                                  FontFamily="Consolas"
+                                                  Foreground="#9CA3AF"
+                                                  VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+            
             <!-- Stato Cluster -->
             <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,20">
                 <StackPanel>
