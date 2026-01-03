@@ -459,21 +459,25 @@ Per procedere, conferma:
             // ⚠️ PROTEZIONE: Verifica se la cartella di destinazione esiste già
             if (!string.IsNullOrWhiteSpace(targetPath))
             {
-                string solutionName = "MyNewSolution"; // Estrai o genera nome soluzione
+                // Estrai nome soluzione dalla richiesta utente
+                string solutionName = ExtractSolutionName(userRequest);
                 string fullTargetPath = System.IO.Path.Combine(targetPath, solutionName);
+                
+                log.LogInformation("[{Time}] Nome soluzione estratto: '{Name}'", solutionTimestamp, solutionName);
+                log.LogInformation("[{Time}] Percorso completo: '{Path}'", solutionTimestamp, fullTargetPath);
                 
                 if (Directory.Exists(fullTargetPath))
                 {
                     log.LogWarning("[{Time}] ⚠️ CARTELLA GIÀ ESISTENTE: {Path}", solutionTimestamp, fullTargetPath);
                     logBuffer.Add($"⚠️ La cartella {solutionName} esiste già in {targetPath}", "WARN");
                     
-                    // Suggerisci un nome alternativo
+                    // Suggerisci un nome alternativo con formato "_01", "_02", ecc.
                     int counter = 1;
-                    string alternativeName = $"{solutionName}_{counter}";
+                    string alternativeName = $"{solutionName}_{counter:D2}";
                     while (Directory.Exists(System.IO.Path.Combine(targetPath, alternativeName)))
                     {
                         counter++;
-                        alternativeName = $"{solutionName}_{counter}";
+                        alternativeName = $"{solutionName}_{counter:D2}";
                     }
                     
                     log.LogInformation("[{Time}] Nome alternativo suggerito: {Alternative}", solutionTimestamp, alternativeName);
@@ -488,22 +492,56 @@ Per procedere, conferma:
                         SuggestedAlternativeName = alternativeName,
                         TargetPath = targetPath,
                         UserRequest = userRequest,
+                        SolutionName = solutionName,
                         Timestamp = DateTime.UtcNow
                     });
                 }
             }
             
-            // Genera PREVIEW invece di creare subito
-            var previewData = GenerateSolutionPreview(userRequest, targetPath);
-            result = previewData.PreviewText;
+            // ⭐ SOLUTION DESIGNER: Analisi intelligente della richiesta
+            log.LogInformation("[{Time}] 🧠 Avvio Solution Designer - Analisi richiesta", solutionTimestamp);
+            var analysis = SolutionDesigner.AnalyzeUserRequest(userRequest);
             
-            // Salva i dati della preview per uso futuro
+            log.LogInformation("[{Time}] ✅ Dominio identificato: '{Domain}'", solutionTimestamp, analysis.Domain);
+            log.LogInformation("[{Time}] ✅ Entità rilevate: {Count} ({Entities})", solutionTimestamp, 
+                analysis.Entities.Count, string.Join(", ", analysis.Entities));
+            log.LogInformation("[{Time}] ✅ Azioni identificate: {Count}", solutionTimestamp, analysis.Actions.Count);
+            log.LogInformation("[{Time}] ✅ Complessità: {Complexity}", solutionTimestamp, analysis.Complexity);
+            log.LogInformation("[{Time}] ✅ Tipo architettura: {Type}", solutionTimestamp, analysis.ArchitectureType);
+            
+            logBuffer.Add($"🧠 Dominio: {analysis.Domain}");
+            logBuffer.Add($"📦 Entità: {string.Join(", ", analysis.Entities)}");
+            logBuffer.Add($"⚡ Complessità: {analysis.Complexity}");
+            
+            // ⭐ SOLUTION DESIGNER: Genera architettura dinamica
+            log.LogInformation("[{Time}] 🏗️ Generazione architettura dinamica", solutionTimestamp);
+            var architecture = SolutionDesigner.GenerateArchitecture(analysis);
+            
+            log.LogInformation("[{Time}] ✅ Soluzione: {Name}", solutionTimestamp, architecture.SolutionName);
+            log.LogInformation("[{Time}] ✅ Progetti: {Count}", solutionTimestamp, architecture.Projects.Count);
+            foreach (var project in architecture.Projects)
+            {
+                log.LogInformation("[{Time}]   - {Name} ({Type})", solutionTimestamp, project.Name, project.Type);
+            }
+            log.LogInformation("[{Time}] ✅ File da generare: {Count}", solutionTimestamp, architecture.Files.Count);
+            
+            logBuffer.Add($"🏗️ Architettura: {architecture.Projects.Count} progetti");
+            logBuffer.Add($"📄 File totali: {architecture.Files.Count}");
+            
+            // ⭐ SOLUTION DESIGNER: Genera preview narrativa
+            log.LogInformation("[{Time}] 📝 Generazione preview narrativa", solutionTimestamp);
+            result = SolutionDesigner.GeneratePreview(analysis, architecture);
+            
+            log.LogInformation("[{Time}] ✅ Preview generata ({Length} caratteri)", solutionTimestamp, result.Length);
+            logBuffer.Add("✅ Preview narrativa completata");
+            
+            // Salva i dati della preview per uso futuro (compatibilità con UI)
             requiresUserConfirmation = true;
             proposalData = new SolutionProposal
             {
-                Features = previewData.FilesToCreate,
-                ProposedStructure = previewData.FinalStructure,
-                Modules = previewData.FoldersToCreate,
+                Features = analysis.Entities.Select(e => $"Gestione {e}").ToList(),
+                ProposedStructure = string.Join("\n", architecture.Projects.Select(p => $"- {p.Name} ({p.Type})")),
+                Modules = architecture.Projects.Select(p => p.Name).ToList(),
                 ProposalText = result
             };
             
@@ -589,21 +627,37 @@ Per procedere, conferma:
             // ⚠️ PROTEZIONE: Verifica se la cartella esiste e se manca la conferma esplicita
             if (!string.IsNullOrWhiteSpace(execTargetPath))
             {
-                string solutionName = "MyNewSolution"; // Estrai o genera nome soluzione
+                // Estrai nome soluzione dalla richiesta utente
+                string solutionName = ExtractSolutionName(execUserRequest);
                 string fullTargetPath = System.IO.Path.Combine(execTargetPath, solutionName);
+                
+                log.LogInformation("[{Time}] Nome soluzione estratto: '{Name}'", execTimestamp, solutionName);
+                log.LogInformation("[{Time}] Percorso completo: '{Path}'", execTimestamp, fullTargetPath);
                 
                 if (Directory.Exists(fullTargetPath) && !forceOverwrite)
                 {
                     log.LogError("[{Time}] ❌ CREAZIONE BLOCCATA: La cartella {Path} esiste già e forceOverwrite=false", execTimestamp, fullTargetPath);
                     logBuffer.Add($"❌ Creazione bloccata: cartella esistente senza conferma esplicita", "ERROR");
                     
+                    // Suggerisci nome alternativo invece di bloccare
+                    int counter = 1;
+                    string alternativeName = $"{solutionName}_{counter:D2}";
+                    while (Directory.Exists(System.IO.Path.Combine(execTargetPath, alternativeName)))
+                    {
+                        counter++;
+                        alternativeName = $"{solutionName}_{counter:D2}";
+                    }
+                    
+                    log.LogInformation("[{Time}] Nome alternativo suggerito: {Alternative}", execTimestamp, alternativeName);
+                    
                     return Results.Ok(new
                     {
                         Success = false,
                         Status = "blocked",
                         Reason = "folder-exists-no-confirmation",
-                        Message = "La cartella esiste già. Serve conferma esplicita per sovrascrivere (forceOverwrite=true).",
+                        Message = $"La cartella esiste già. Serve conferma esplicita per sovrascrivere (forceOverwrite=true) o usa il nome alternativo suggerito: {alternativeName}",
                         ExistingPath = fullTargetPath,
+                        SuggestedAlternativeName = alternativeName,
                         ExecutedTask = request.Task,
                         Timestamp = DateTime.UtcNow
                     });
@@ -637,8 +691,113 @@ Per procedere, conferma:
                 }
             }
             
-            // ESEGUI effettivamente la creazione
-            result = GenerateNewSolution(execUserRequest, execTargetPath);
+            // ⭐ SOLUTION DESIGNER: Rigenera analisi e architettura per la creazione reale
+            log.LogInformation("[{Time}] 🧠 Rigenero analisi con Solution Designer", execTimestamp);
+            var execAnalysis = SolutionDesigner.AnalyzeUserRequest(execUserRequest);
+            
+            log.LogInformation("[{Time}] 🏗️ Rigenero architettura dinamica", execTimestamp);
+            var execArchitecture = SolutionDesigner.GenerateArchitecture(execAnalysis);
+            
+            log.LogInformation("[{Time}] 💻 Genero codice reale per tutti i file", execTimestamp);
+            var execGeneratedCode = SolutionDesigner.GenerateCode(execArchitecture);
+            
+            log.LogInformation("[{Time}] ✅ Codice generato per {Count} file", execTimestamp, execGeneratedCode.Count);
+            logBuffer.Add($"💻 Codice generato: {execGeneratedCode.Count} file");
+            
+            // ⭐ ESEGUI effettivamente la creazione fisica
+            log.LogInformation("[{Time}] 📁 Inizio creazione fisica struttura", execTimestamp);
+            logBuffer.Add("📁 Creazione cartelle e file in corso...");
+            
+            try
+            {
+                // Crea cartella principale della soluzione
+                var mainSolutionPath = System.IO.Path.Combine(execTargetPath!, execArchitecture.SolutionName);
+                Directory.CreateDirectory(mainSolutionPath);
+                log.LogInformation("[{Time}] ✅ Cartella soluzione creata: {Path}", execTimestamp, mainSolutionPath);
+                logBuffer.Add($"✅ Cartella principale: {execArchitecture.SolutionName}");
+                
+                // Crea tutte le cartelle necessarie
+                foreach (var folder in execArchitecture.Folders)
+                {
+                    var folderPath = System.IO.Path.Combine(mainSolutionPath, folder);
+                    Directory.CreateDirectory(folderPath);
+                    log.LogInformation("[{Time}]   Cartella: {Folder}", execTimestamp, folder);
+                }
+                logBuffer.Add($"✅ {execArchitecture.Folders.Count} cartelle create");
+                
+                // Scrivi tutti i file generati
+                int filesCreated = 0;
+                foreach (var file in execGeneratedCode)
+                {
+                    var filePath = System.IO.Path.Combine(mainSolutionPath, file.Key);
+                    var fileDirectory = System.IO.Path.GetDirectoryName(filePath);
+                    
+                    // Assicurati che la directory esista
+                    if (!string.IsNullOrEmpty(fileDirectory))
+                    {
+                        Directory.CreateDirectory(fileDirectory);
+                    }
+                    
+                    // Scrivi il file
+                    File.WriteAllText(filePath, file.Value);
+                    filesCreated++;
+                    
+                    log.LogInformation("[{Time}]   File: {File}", execTimestamp, file.Key);
+                }
+                
+                logBuffer.Add($"✅ {filesCreated} file creati");
+                log.LogInformation("[{Time}] ✅ Creazione completata con successo!", execTimestamp);
+                
+                result = $@"# ✅ Soluzione Creata con Successo!
+
+**Soluzione**: {execArchitecture.SolutionName}
+**Percorso**: {mainSolutionPath}
+**Progetti**: {execArchitecture.Projects.Count}
+**File totali**: {filesCreated}
+
+## 📂 Struttura Creata
+
+{string.Join("\n", execArchitecture.Projects.Select(p => $"- **{p.Name}** ({p.Type})"))}
+
+## 🚀 Prossimi Passi
+
+```bash
+cd ""{mainSolutionPath}""
+dotnet restore
+dotnet build
+```
+
+## 📦 Progetti Generati
+
+{string.Join("\n\n", execArchitecture.Projects.Select(p => $@"### {p.Name}
+
+**Tipo**: {p.Type}  
+**Descrizione**: {p.Description}  
+**Dipendenze**: {(p.Dependencies.Count > 0 ? string.Join(", ", p.Dependencies) : "Nessuna")}"))}
+
+---
+
+*Soluzione generata dinamicamente da Solution Designer - IndigoLab Cluster*  
+*Architettura: {execAnalysis.ArchitectureType} | Complessità: {execAnalysis.Complexity}*
+";
+                
+                logBuffer.Add("✅ SOLUZIONE CREATA CON SUCCESSO!");
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex, "[{Time}] ❌ Errore durante creazione fisica", execTimestamp);
+                logBuffer.Add($"❌ Errore creazione: {ex.Message}", "ERROR");
+                
+                result = $@"# ❌ Errore Durante Creazione
+
+{ex.Message}
+
+Dettagli tecnici:
+```
+{ex.StackTrace}
+```
+";
+            }
             
             // FILE ALWAYS MODE: Scrivi SEMPRE file output
             try
@@ -863,6 +1022,76 @@ bool IsSolutionCreationRequest(string payload)
 }
 
 /// <summary>
+/// Estrae il nome della soluzione dalla richiesta utente
+/// </summary>
+string ExtractSolutionName(string userRequest)
+{
+    if (string.IsNullOrWhiteSpace(userRequest))
+        return "MyNewSolution";
+    
+    // Rimuovi parole comuni
+    var cleanRequest = userRequest.ToLowerInvariant()
+        .Replace("crea", "")
+        .Replace("genera", "")
+        .Replace("sviluppa", "")
+        .Replace("costruisci", "")
+        .Replace("una soluzione", "")
+        .Replace("un progetto", "")
+        .Replace("per", "")
+        .Replace("gestire", "")
+        .Replace("gestione", "")
+        .Replace("di", "")
+        .Replace("del", "")
+        .Replace("della", "")
+        .Replace("il", "")
+        .Replace("la", "")
+        .Replace("i", "")
+        .Replace("le", "")
+        .Replace("uno", "")
+        .Replace("una", "")
+        .Trim();
+    
+    // Prendi le prime 2-3 parole significative
+    var words = cleanRequest.Split(new[] { ' ', ',', '.', ';', '-', '_' }, StringSplitOptions.RemoveEmptyEntries)
+        .Where(w => w.Length > 2) // Ignora parole troppo corte
+        .Take(3)
+        .ToArray();
+    
+    if (words.Length == 0)
+        return "MyNewSolution";
+    
+    // Converti in PascalCase
+    var solutionName = string.Join("", words.Select(w => 
+        char.ToUpper(w[0]) + w.Substring(1).ToLower()));
+    
+    // Aggiungi suffisso se non c'è già un sostantivo chiaro
+    if (!solutionName.EndsWith("Manager") && 
+        !solutionName.EndsWith("Management") && 
+        !solutionName.EndsWith("System") &&
+        !solutionName.EndsWith("Service") &&
+        !solutionName.EndsWith("App") &&
+        !solutionName.EndsWith("Tool") &&
+        solutionName.Length < 20) // Solo se il nome è abbastanza corto
+    {
+        solutionName += "Manager";
+    }
+    
+    // Limita lunghezza
+    if (solutionName.Length > 50)
+        solutionName = solutionName.Substring(0, 50);
+    
+    // Rimuovi caratteri non validi per nomi cartella Windows
+    solutionName = string.Join("", solutionName.Where(c => 
+        char.IsLetterOrDigit(c) || c == '_' || c == '-'));
+    
+    // Se rimane vuoto dopo la pulizia, usa default
+    if (string.IsNullOrWhiteSpace(solutionName))
+        return "MyNewSolution";
+    
+    return solutionName;
+}
+
+/// <summary>
 /// Genera un proposal per la creazione di una soluzione
 /// </summary>
 SolutionProposal GenerateSolutionProposal(string userRequest)
@@ -944,8 +1173,11 @@ SolutionPreviewData GenerateSolutionPreview(string userRequest, string? targetPa
         throw new ArgumentException("TargetPath mancante nel payload. Non è possibile generare la preview senza un percorso di destinazione valido.");
     }
     
-    string solutionName = "MyNewSolution";
+    // Estrai nome soluzione dalla richiesta utente
+    string solutionName = ExtractSolutionName(userRequest);
     string fullPath = System.IO.Path.Combine(targetPath, solutionName);
+    
+    logger.LogInformation("Preview per soluzione '{SolutionName}' in '{Path}'", solutionName, fullPath);
     
     // Lista file che verranno creati
     var filesToCreate = new List<string>
@@ -1065,8 +1297,11 @@ string GenerateNewSolution(string userRequest, string? targetPath)
         throw new ArgumentException("TargetPath mancante nel payload. Non è possibile creare la soluzione senza un percorso di destinazione valido.");
     }
     
-    string solutionName = "MyNewSolution";
+    // Estrai nome soluzione dalla richiesta utente
+    string solutionName = ExtractSolutionName(userRequest);
     string fullPath = System.IO.Path.Combine(targetPath, solutionName);
+    
+    logger.LogInformation("Creazione soluzione '{SolutionName}' in '{Path}'", solutionName, fullPath);
     
     try
     {
@@ -1348,6 +1583,856 @@ logger.LogInformation("CursorBridge pronto per integrazione con Cursor");
 
 app.Run();
 
+// ==================== SOLUTION DESIGNER ====================
+
+/// <summary>
+/// Solution Designer intelligente - Analizza richieste e genera architetture dinamiche
+/// </summary>
+public static class SolutionDesigner
+{
+    /// <summary>
+    /// Analizza la richiesta utente ed estrae requisiti, entità, azioni, casi d'uso
+    /// </summary>
+    public static DomainAnalysis AnalyzeUserRequest(string userRequest)
+    {
+        var requestLower = userRequest.ToLowerInvariant();
+        
+        // Identifica il dominio
+        var domain = IdentifyDomain(requestLower);
+        
+        // Estrai entità
+        var entities = ExtractEntities(requestLower);
+        
+        // Identifica azioni principali
+        var actions = ExtractActions(requestLower);
+        
+        // Identifica casi d'uso
+        var useCases = GenerateUseCases(entities, actions);
+        
+        // Determina complessità
+        var complexity = DetermineComplexity(entities.Count, actions.Count);
+        
+        // Identifica tipo architettura richiesta
+        var architectureType = IdentifyArchitectureType(requestLower);
+        
+        return new DomainAnalysis
+        {
+            Domain = domain,
+            Entities = entities,
+            Actions = actions,
+            UseCases = useCases,
+            Complexity = complexity,
+            ArchitectureType = architectureType,
+            RequiresApi = requestLower.Contains("api") || requestLower.Contains("rest") || requestLower.Contains("endpoint"),
+            RequiresDatabase = requestLower.Contains("database") || requestLower.Contains("persist") || requestLower.Contains("salva") || entities.Count > 2,
+            RequiresUI = requestLower.Contains("ui") || requestLower.Contains("interface") || requestLower.Contains("dashboard") || requestLower.Contains("web"),
+            RequiresAuth = requestLower.Contains("auth") || requestLower.Contains("login") || requestLower.Contains("utent"),
+            UserRequest = userRequest
+        };
+    }
+    
+    /// <summary>
+    /// Genera un'architettura coerente basata sull'analisi del dominio
+    /// </summary>
+    public static SolutionArchitecture GenerateArchitecture(DomainAnalysis analysis)
+    {
+        var solutionName = GenerateSolutionName(analysis.Domain);
+        var projects = new List<ProjectInfo>();
+        var folders = new List<string>();
+        var files = new List<FileInfo>();
+        
+        // Determina progetti necessari in base all'analisi
+        if (analysis.RequiresApi || analysis.ArchitectureType == "microservice")
+        {
+            projects.Add(new ProjectInfo
+            {
+                Name = $"{solutionName}.Api",
+                Type = "webapi",
+                Description = "REST API con controllers e endpoints",
+                Dependencies = new List<string> { $"{solutionName}.Core" }
+            });
+        }
+        
+        // Core sempre presente (business logic)
+        projects.Add(new ProjectInfo
+        {
+            Name = $"{solutionName}.Core",
+            Type = "classlib",
+            Description = "Business logic, interfaces, domain models",
+            Dependencies = new List<string>()
+        });
+        
+        if (analysis.RequiresDatabase)
+        {
+            projects.Add(new ProjectInfo
+            {
+                Name = $"{solutionName}.Infrastructure",
+                Type = "classlib",
+                Description = "Data access, repositories, database context",
+                Dependencies = new List<string> { $"{solutionName}.Core" }
+            });
+        }
+        
+        if (analysis.RequiresUI)
+        {
+            projects.Add(new ProjectInfo
+            {
+                Name = $"{solutionName}.Web",
+                Type = "webapp",
+                Description = "Frontend web application (Blazor/Razor)",
+                Dependencies = new List<string> { $"{solutionName}.Core" }
+            });
+        }
+        
+        // Genera struttura cartelle e file per ogni progetto
+        foreach (var project in projects)
+        {
+            GenerateProjectStructure(project, analysis, folders, files, solutionName);
+        }
+        
+        // Aggiungi README.md alla root
+        files.Add(new FileInfo
+        {
+            Path = "README.md",
+            Type = "markdown",
+            Description = "Documentazione soluzione"
+        });
+        
+        return new SolutionArchitecture
+        {
+            SolutionName = solutionName,
+            Projects = projects,
+            Folders = folders,
+            Files = files,
+            Analysis = analysis
+        };
+    }
+    
+    /// <summary>
+    /// Genera il codice reale per tutti i file dell'architettura
+    /// </summary>
+    public static Dictionary<string, string> GenerateCode(SolutionArchitecture architecture)
+    {
+        var generatedFiles = new Dictionary<string, string>();
+        
+        foreach (var project in architecture.Projects)
+        {
+            // Genera .csproj
+            var csprojPath = $"{project.Name}/{project.Name}.csproj";
+            generatedFiles[csprojPath] = GenerateCsprojContent(project, architecture);
+            
+            // Genera file specifici in base al tipo progetto
+            switch (project.Type)
+            {
+                case "webapi":
+                    GenerateApiProjectFiles(project, architecture, generatedFiles);
+                    break;
+                case "classlib":
+                    if (project.Name.EndsWith(".Core"))
+                        GenerateCoreProjectFiles(project, architecture, generatedFiles);
+                    else if (project.Name.EndsWith(".Infrastructure"))
+                        GenerateInfrastructureProjectFiles(project, architecture, generatedFiles);
+                    break;
+                case "webapp":
+                    GenerateWebProjectFiles(project, architecture, generatedFiles);
+                    break;
+            }
+        }
+        
+        // Genera README.md
+        generatedFiles["README.md"] = GenerateReadmeContent(architecture);
+        
+        return generatedFiles;
+    }
+    
+    /// <summary>
+    /// Genera una preview narrativa e dettagliata dell'architettura
+    /// </summary>
+    public static string GeneratePreview(DomainAnalysis analysis, SolutionArchitecture architecture)
+    {
+        var preview = $@"# 🎯 Solution Design Preview
+
+**Soluzione**: {architecture.SolutionName}  
+**Dominio**: {analysis.Domain}  
+**Complessità**: {analysis.Complexity}  
+**Tipo Architettura**: {analysis.ArchitectureType}
+
+---
+
+## 🧠 Analisi della Richiesta
+
+Ho analizzato la tua richiesta: *""{analysis.UserRequest}""*
+
+### 📦 Entità Identificate ({analysis.Entities.Count})
+{string.Join("\n", analysis.Entities.Select(e => $"- **{e}**"))}
+
+### ⚡ Azioni Principali ({analysis.Actions.Count})
+{string.Join("\n", analysis.Actions.Select(a => $"- {a}"))}
+
+### 💼 Casi d'Uso ({analysis.UseCases.Count})
+{string.Join("\n", analysis.UseCases.Select(u => $"- {u}"))}
+
+---
+
+## 🏗️ Architettura Proposta
+
+Basandomi sull'analisi, propongo un'architettura **{analysis.ArchitectureType}** con i seguenti progetti:
+
+### 📂 Progetti ({architecture.Projects.Count})
+
+{string.Join("\n\n", architecture.Projects.Select(p => $@"#### {p.Name}
+**Tipo**: {p.Type}  
+**Scopo**: {p.Description}  
+**Dipendenze**: {(p.Dependencies.Count > 0 ? string.Join(", ", p.Dependencies) : "Nessuna")}"))}
+
+---
+
+## 📁 Struttura Completa
+
+```
+{architecture.SolutionName}/
+{string.Join("\n", architecture.Projects.Select(p => $"├── {p.Name}/"))}
+└── README.md
+```
+
+### File Totali: {architecture.Files.Count}
+
+{string.Join("\n", architecture.Files.Take(10).Select(f => $"- `{f.Path}` ({f.Type})"))}
+{(architecture.Files.Count > 10 ? $"\n... e altri {architecture.Files.Count - 10} file" : "")}
+
+---
+
+## 🎨 Motivazioni Architetturali
+
+{GenerateArchitecturalReasons(analysis, architecture)}
+
+---
+
+## 📊 Funzionalità Incluse
+
+{GenerateFeaturesList(analysis)}
+
+---
+
+## ⚠️ NOTA IMPORTANTE
+
+**Questa è un'ANTEPRIMA generata dinamicamente.**
+
+Nessun file è stato ancora creato. Per procedere con la creazione reale della soluzione, conferma nell'interfaccia utente.
+
+---
+
+*Generated by Solution Designer - IndigoLab Cluster*  
+*Architecture Type: {analysis.ArchitectureType}*  
+*Complexity: {analysis.Complexity}*
+";
+        
+        return preview;
+    }
+    
+    // ========== METODI HELPER ==========
+    
+    private static string IdentifyDomain(string request)
+    {
+        if (request.Contains("colori") || request.Contains("palette")) return "Gestione Colori";
+        if (request.Contains("utent") || request.Contains("user")) return "Gestione Utenti";
+        if (request.Contains("prodott") || request.Contains("product")) return "Gestione Prodotti";
+        if (request.Contains("ordini") || request.Contains("order")) return "Gestione Ordini";
+        if (request.Contains("inventory") || request.Contains("magazzino")) return "Gestione Inventario";
+        if (request.Contains("fattur") || request.Contains("invoice")) return "Fatturazione";
+        if (request.Contains("report") || request.Contains("analytic")) return "Reporting e Analytics";
+        if (request.Contains("notif")) return "Sistema Notifiche";
+        if (request.Contains("auth") || request.Contains("login")) return "Autenticazione";
+        if (request.Contains("blog") || request.Contains("post")) return "Content Management";
+        if (request.Contains("task") || request.Contains("todo")) return "Task Management";
+        
+        return "Business Domain";
+    }
+    
+    private static List<string> ExtractEntities(string request)
+    {
+        var entities = new List<string>();
+        
+        if (request.Contains("utent") || request.Contains("user")) entities.Add("User");
+        if (request.Contains("prodott") || request.Contains("product")) entities.Add("Product");
+        if (request.Contains("ordini") || request.Contains("order")) entities.Add("Order");
+        if (request.Contains("categor")) entities.Add("Category");
+        if (request.Contains("colore") || request.Contains("color")) entities.Add("Color");
+        if (request.Contains("palette")) entities.Add("Palette");
+        if (request.Contains("cliente") || request.Contains("customer")) entities.Add("Customer");
+        if (request.Contains("fattura") || request.Contains("invoice")) entities.Add("Invoice");
+        if (request.Contains("pagamento") || request.Contains("payment")) entities.Add("Payment");
+        if (request.Contains("articol")) entities.Add("Article");
+        if (request.Contains("task")) entities.Add("Task");
+        if (request.Contains("progetto") || request.Contains("project")) entities.Add("Project");
+        
+        // Se non troviamo entità specifiche, ne aggiungiamo alcune generiche
+        if (entities.Count == 0)
+        {
+            entities.Add("Entity");
+            entities.Add("Item");
+        }
+        
+        return entities.Distinct().ToList();
+    }
+    
+    private static List<string> ExtractActions(string request)
+    {
+        var actions = new List<string>();
+        
+        if (request.Contains("crea") || request.Contains("create")) actions.Add("Creare");
+        if (request.Contains("modific") || request.Contains("edit") || request.Contains("update")) actions.Add("Modificare");
+        if (request.Contains("elimin") || request.Contains("delete")) actions.Add("Eliminare");
+        if (request.Contains("visual") || request.Contains("view") || request.Contains("list")) actions.Add("Visualizzare");
+        if (request.Contains("cerc") || request.Contains("search")) actions.Add("Cercare");
+        if (request.Contains("filtra") || request.Contains("filter")) actions.Add("Filtrare");
+        if (request.Contains("esport") || request.Contains("export")) actions.Add("Esportare");
+        if (request.Contains("import")) actions.Add("Importare");
+        if (request.Contains("validar") || request.Contains("validate")) actions.Add("Validare");
+        if (request.Contains("calcola") || request.Contains("calculate")) actions.Add("Calcolare");
+        
+        // Azioni di default se non troviamo nulla
+        if (actions.Count == 0)
+        {
+            actions.Add("Gestire");
+            actions.Add("Visualizzare");
+        }
+        
+        return actions;
+    }
+    
+    private static List<string> GenerateUseCases(List<string> entities, List<string> actions)
+    {
+        var useCases = new List<string>();
+        
+        foreach (var entity in entities.Take(3))
+        {
+            foreach (var action in actions.Take(3))
+            {
+                useCases.Add($"{action} {entity}");
+            }
+        }
+        
+        return useCases.Take(6).ToList();
+    }
+    
+    private static string DetermineComplexity(int entityCount, int actionCount)
+    {
+        var score = entityCount + actionCount;
+        
+        if (score <= 3) return "low";
+        if (score <= 6) return "medium";
+        return "high";
+    }
+    
+    private static string IdentifyArchitectureType(string request)
+    {
+        if (request.Contains("microservice")) return "microservice";
+        if (request.Contains("monolith")) return "monolithic";
+        if (request.Contains("api") || request.Contains("rest")) return "api-first";
+        if (request.Contains("clean") || request.Contains("ddd")) return "clean-architecture";
+        
+        return "layered"; // Default
+    }
+    
+    private static string GenerateSolutionName(string domain)
+    {
+        var cleaned = domain
+            .Replace("Gestione ", "")
+            .Replace("Sistema ", "")
+            .Replace(" ", "");
+        
+        return cleaned + "Manager";
+    }
+    
+    private static void GenerateProjectStructure(ProjectInfo project, DomainAnalysis analysis, 
+        List<string> folders, List<FileInfo> files, string solutionName)
+    {
+        var projectPath = project.Name;
+        
+        switch (project.Type)
+        {
+            case "webapi":
+                folders.Add($"{projectPath}/Controllers");
+                folders.Add($"{projectPath}/Models");
+                folders.Add($"{projectPath}/Properties");
+                
+                files.Add(new FileInfo { Path = $"{projectPath}/Controllers/BaseController.cs", Type = "csharp" });
+                foreach (var entity in analysis.Entities.Take(3))
+                {
+                    files.Add(new FileInfo { Path = $"{projectPath}/Controllers/{entity}Controller.cs", Type = "csharp" });
+                }
+                files.Add(new FileInfo { Path = $"{projectPath}/Program.cs", Type = "csharp" });
+                files.Add(new FileInfo { Path = $"{projectPath}/appsettings.json", Type = "json" });
+                break;
+                
+            case "classlib":
+                if (project.Name.EndsWith(".Core"))
+                {
+                    folders.Add($"{projectPath}/Interfaces");
+                    folders.Add($"{projectPath}/Models");
+                    folders.Add($"{projectPath}/Services");
+                    
+                    foreach (var entity in analysis.Entities)
+                    {
+                        files.Add(new FileInfo { Path = $"{projectPath}/Models/{entity}.cs", Type = "csharp" });
+                        files.Add(new FileInfo { Path = $"{projectPath}/Interfaces/I{entity}Service.cs", Type = "csharp" });
+                        files.Add(new FileInfo { Path = $"{projectPath}/Services/{entity}Service.cs", Type = "csharp" });
+                    }
+                }
+                else if (project.Name.EndsWith(".Infrastructure"))
+                {
+                    folders.Add($"{projectPath}/Data");
+                    folders.Add($"{projectPath}/Repositories");
+                    
+                    files.Add(new FileInfo { Path = $"{projectPath}/Data/ApplicationDbContext.cs", Type = "csharp" });
+                    foreach (var entity in analysis.Entities)
+                    {
+                        files.Add(new FileInfo { Path = $"{projectPath}/Repositories/{entity}Repository.cs", Type = "csharp" });
+                    }
+                }
+                break;
+        }
+    }
+    
+    private static string GenerateCsprojContent(ProjectInfo project, SolutionArchitecture architecture)
+    {
+        var sdk = project.Type == "webapi" ? "Microsoft.NET.Sdk.Web" : "Microsoft.NET.Sdk";
+        var dependencies = string.Join("\n", project.Dependencies.Select(d => 
+            $"    <ProjectReference Include=\"..\\{d}\\{d}.csproj\" />"));
+        
+        return $@"<Project Sdk=""{sdk}"">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+{dependencies}
+  </ItemGroup>
+</Project>";
+    }
+    
+    private static void GenerateApiProjectFiles(ProjectInfo project, SolutionArchitecture architecture, 
+        Dictionary<string, string> files)
+    {
+        // Program.cs
+        files[$"{project.Name}/Program.cs"] = $@"var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}}
+
+app.UseAuthorization();
+app.MapControllers();
+app.Run();
+";
+        
+        // Controllers
+        foreach (var entity in architecture.Analysis.Entities.Take(3))
+        {
+            files[$"{project.Name}/Controllers/{entity}Controller.cs"] = GenerateControllerCode(entity, architecture);
+        }
+        
+        // appsettings.json
+        files[$"{project.Name}/appsettings.json"] = @"{
+  ""Logging"": {
+    ""LogLevel"": {
+      ""Default"": ""Information"",
+      ""Microsoft.AspNetCore"": ""Warning""
+    }
+  },
+  ""AllowedHosts"": ""*""
+}";
+    }
+    
+    private static void GenerateCoreProjectFiles(ProjectInfo project, SolutionArchitecture architecture, 
+        Dictionary<string, string> files)
+    {
+        foreach (var entity in architecture.Analysis.Entities)
+        {
+            // Model
+            files[$"{project.Name}/Models/{entity}.cs"] = GenerateModelCode(entity, project.Name);
+            
+            // Interface
+            files[$"{project.Name}/Interfaces/I{entity}Service.cs"] = GenerateServiceInterfaceCode(entity, project.Name);
+            
+            // Service
+            files[$"{project.Name}/Services/{entity}Service.cs"] = GenerateServiceCode(entity, project.Name);
+        }
+    }
+    
+    private static void GenerateInfrastructureProjectFiles(ProjectInfo project, SolutionArchitecture architecture, 
+        Dictionary<string, string> files)
+    {
+        // DbContext
+        files[$"{project.Name}/Data/ApplicationDbContext.cs"] = GenerateDbContextCode(architecture, project.Name);
+        
+        // Repositories
+        foreach (var entity in architecture.Analysis.Entities)
+        {
+            files[$"{project.Name}/Repositories/{entity}Repository.cs"] = GenerateRepositoryCode(entity, project.Name);
+        }
+    }
+    
+    private static void GenerateWebProjectFiles(ProjectInfo project, SolutionArchitecture architecture, 
+        Dictionary<string, string> files)
+    {
+        // Program.cs base per web app
+        files[$"{project.Name}/Program.cs"] = @"var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddRazorPages();
+var app = builder.Build();
+app.UseStaticFiles();
+app.UseRouting();
+app.MapRazorPages();
+app.Run();
+";
+    }
+    
+    private static string GenerateControllerCode(string entity, SolutionArchitecture architecture)
+    {
+        var solutionName = architecture.SolutionName;
+        
+        return $@"using Microsoft.AspNetCore.Mvc;
+using {solutionName}.Core.Interfaces;
+using {solutionName}.Core.Models;
+
+namespace {solutionName}.Api.Controllers;
+
+[ApiController]
+[Route(""api/[controller]"")]
+public class {entity}Controller : ControllerBase
+{{
+    private readonly I{entity}Service _{entity.ToLower()}Service;
+    
+    public {entity}Controller(I{entity}Service {entity.ToLower()}Service)
+    {{
+        _{entity.ToLower()}Service = {entity.ToLower()}Service;
+    }}
+    
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<{entity}>>> GetAll()
+    {{
+        var items = await _{entity.ToLower()}Service.GetAllAsync();
+        return Ok(items);
+    }}
+    
+    [HttpGet(""{{id}}"")]
+    public async Task<ActionResult<{entity}>> GetById(int id)
+    {{
+        var item = await _{entity.ToLower()}Service.GetByIdAsync(id);
+        if (item == null) return NotFound();
+        return Ok(item);
+    }}
+    
+    [HttpPost]
+    public async Task<ActionResult<{entity}>> Create({entity} item)
+    {{
+        var created = await _{entity.ToLower()}Service.CreateAsync(item);
+        return CreatedAtAction(nameof(GetById), new {{ id = created.Id }}, created);
+    }}
+    
+    [HttpPut(""{{id}}"")]
+    public async Task<IActionResult> Update(int id, {entity} item)
+    {{
+        if (id != item.Id) return BadRequest();
+        await _{entity.ToLower()}Service.UpdateAsync(item);
+        return NoContent();
+    }}
+    
+    [HttpDelete(""{{id}}"")]
+    public async Task<IActionResult> Delete(int id)
+    {{
+        await _{entity.ToLower()}Service.DeleteAsync(id);
+        return NoContent();
+    }}
+}}
+";
+    }
+    
+    private static string GenerateModelCode(string entity, string projectName)
+    {
+        return $@"namespace {projectName}.Models;
+
+public class {entity}
+{{
+    public int Id {{ get; set; }}
+    public string Name {{ get; set; }} = string.Empty;
+    public string Description {{ get; set; }} = string.Empty;
+    public DateTime CreatedAt {{ get; set; }} = DateTime.UtcNow;
+    public DateTime? UpdatedAt {{ get; set; }}
+    public bool IsActive {{ get; set; }} = true;
+}}
+";
+    }
+    
+    private static string GenerateServiceInterfaceCode(string entity, string projectName)
+    {
+        return $@"using {projectName}.Models;
+
+namespace {projectName}.Interfaces;
+
+public interface I{entity}Service
+{{
+    Task<IEnumerable<{entity}>> GetAllAsync();
+    Task<{entity}?> GetByIdAsync(int id);
+    Task<{entity}> CreateAsync({entity} item);
+    Task UpdateAsync({entity} item);
+    Task DeleteAsync(int id);
+}}
+";
+    }
+    
+    private static string GenerateServiceCode(string entity, string projectName)
+    {
+        return $@"using {projectName}.Interfaces;
+using {projectName}.Models;
+
+namespace {projectName}.Services;
+
+public class {entity}Service : I{entity}Service
+{{
+    private readonly List<{entity}> _items = new();
+    
+    public Task<IEnumerable<{entity}>> GetAllAsync()
+    {{
+        return Task.FromResult<IEnumerable<{entity}>>(_items);
+    }}
+    
+    public Task<{entity}?> GetByIdAsync(int id)
+    {{
+        var item = _items.FirstOrDefault(x => x.Id == id);
+        return Task.FromResult(item);
+    }}
+    
+    public Task<{entity}> CreateAsync({entity} item)
+    {{
+        item.Id = _items.Count + 1;
+        item.CreatedAt = DateTime.UtcNow;
+        _items.Add(item);
+        return Task.FromResult(item);
+    }}
+    
+    public Task UpdateAsync({entity} item)
+    {{
+        var existing = _items.FirstOrDefault(x => x.Id == item.Id);
+        if (existing != null)
+        {{
+            existing.Name = item.Name;
+            existing.Description = item.Description;
+            existing.UpdatedAt = DateTime.UtcNow;
+        }}
+        return Task.CompletedTask;
+    }}
+    
+    public Task DeleteAsync(int id)
+    {{
+        var item = _items.FirstOrDefault(x => x.Id == id);
+        if (item != null) _items.Remove(item);
+        return Task.CompletedTask;
+    }}
+}}
+";
+    }
+    
+    private static string GenerateDbContextCode(SolutionArchitecture architecture, string projectName)
+    {
+        var solutionName = architecture.SolutionName;
+        var dbSets = string.Join("\n    ", architecture.Analysis.Entities.Select(e => 
+            $"public DbSet<{e}> {e}s {{ get; set; }}"));
+        
+        return $@"using Microsoft.EntityFrameworkCore;
+using {solutionName}.Core.Models;
+
+namespace {projectName}.Data;
+
+public class ApplicationDbContext : DbContext
+{{
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) 
+        : base(options) {{ }}
+    
+    {dbSets}
+}}
+";
+    }
+    
+    private static string GenerateRepositoryCode(string entity, string projectName)
+    {
+        var solutionName = projectName.Replace(".Infrastructure", "");
+        
+        return $@"using {solutionName}.Core.Models;
+using {projectName}.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace {projectName}.Repositories;
+
+public class {entity}Repository
+{{
+    private readonly ApplicationDbContext _context;
+    
+    public {entity}Repository(ApplicationDbContext context)
+    {{
+        _context = context;
+    }}
+    
+    public async Task<List<{entity}>> GetAllAsync()
+    {{
+        return await _context.{entity}s.ToListAsync();
+    }}
+    
+    public async Task<{entity}?> GetByIdAsync(int id)
+    {{
+        return await _context.{entity}s.FindAsync(id);
+    }}
+    
+    public async Task<{entity}> CreateAsync({entity} item)
+    {{
+        _context.{entity}s.Add(item);
+        await _context.SaveChangesAsync();
+        return item;
+    }}
+    
+    public async Task UpdateAsync({entity} item)
+    {{
+        _context.Entry(item).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
+    }}
+    
+    public async Task DeleteAsync(int id)
+    {{
+        var item = await _context.{entity}s.FindAsync(id);
+        if (item != null)
+        {{
+            _context.{entity}s.Remove(item);
+            await _context.SaveChangesAsync();
+        }}
+    }}
+}}
+";
+    }
+    
+    private static string GenerateReadmeContent(SolutionArchitecture architecture)
+    {
+        return $@"# {architecture.SolutionName}
+
+**Dominio**: {architecture.Analysis.Domain}  
+**Generato da**: IndigoLab Solution Designer  
+**Data**: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC
+
+---
+
+## 📋 Descrizione
+
+Soluzione generata automaticamente in base alla richiesta:
+
+> {architecture.Analysis.UserRequest}
+
+---
+
+## 🏗️ Architettura
+
+**Tipo**: {architecture.Analysis.ArchitectureType}  
+**Complessità**: {architecture.Analysis.Complexity}
+
+### Progetti
+
+{string.Join("\n", architecture.Projects.Select(p => $"- **{p.Name}** ({p.Type}): {p.Description}"))}
+
+---
+
+## 🚀 Come Iniziare
+
+```bash
+# Ripristina i pacchetti
+dotnet restore
+
+# Compila la soluzione
+dotnet build
+
+# Avvia l'API (se presente)
+cd {architecture.Projects.FirstOrDefault(p => p.Type == "webapi")?.Name ?? architecture.SolutionName}.Api
+dotnet run
+```
+
+---
+
+## 📦 Entità del Dominio
+
+{string.Join("\n", architecture.Analysis.Entities.Select(e => $"- {e}"))}
+
+---
+
+## ⚡ Funzionalità
+
+{string.Join("\n", architecture.Analysis.UseCases.Select(u => $"- {u}"))}
+
+---
+
+## 🛠️ Tecnologie
+
+- .NET 8.0
+- ASP.NET Core (se API)
+- Entity Framework Core (se database)
+
+---
+
+*Generato automaticamente da IndigoLab Solution Designer*
+";
+    }
+    
+    private static string GenerateArchitecturalReasons(DomainAnalysis analysis, SolutionArchitecture architecture)
+    {
+        var reasons = new List<string>();
+        
+        reasons.Add($"✅ **Dominio identificato come '{analysis.Domain}'** - questo determina la struttura base");
+        
+        if (analysis.RequiresApi)
+            reasons.Add("✅ **API REST richiesta** - progetto API dedicato con controllers");
+        
+        if (analysis.RequiresDatabase)
+            reasons.Add("✅ **Persistenza dati richiesta** - progetto Infrastructure con repositories");
+        
+        if (architecture.Projects.Count > 2)
+            reasons.Add($"✅ **Architettura multi-layer** - {architecture.Projects.Count} progetti per separazione delle responsabilità");
+        
+        if (analysis.Complexity == "high")
+            reasons.Add("✅ **Alta complessità rilevata** - architettura scalabile e modulare");
+        
+        return string.Join("\n", reasons);
+    }
+    
+    private static string GenerateFeaturesList(DomainAnalysis analysis)
+    {
+        var features = new List<string>();
+        
+        features.Add($"✅ Gestione completa di {analysis.Entities.Count} entità principali");
+        features.Add($"✅ {analysis.Actions.Count} operazioni CRUD implementate");
+        
+        if (analysis.RequiresApi)
+            features.Add("✅ REST API con Swagger documentation");
+        
+        if (analysis.RequiresDatabase)
+            features.Add("✅ Data persistence layer con Entity Framework");
+        
+        if (analysis.RequiresAuth)
+            features.Add("✅ Sistema di autenticazione e autorizzazione");
+        
+        features.Add("✅ Logging e error handling integrati");
+        features.Add("✅ Dependency injection configurata");
+        
+        return string.Join("\n", features);
+    }
+}
+
 // ==================== MODELS ====================
 
 /// <summary>
@@ -1399,4 +2484,55 @@ public class StepExplanationData
     public string ExplanationText { get; set; } = "";
     public string StepId { get; set; } = "";
     public string StepType { get; set; } = "";
+}
+
+/// <summary>
+/// Analisi del dominio basata sulla richiesta utente
+/// </summary>
+public class DomainAnalysis
+{
+    public string Domain { get; set; } = "";
+    public List<string> Entities { get; set; } = new();
+    public List<string> Actions { get; set; } = new();
+    public List<string> UseCases { get; set; } = new();
+    public string Complexity { get; set; } = "medium";
+    public string ArchitectureType { get; set; } = "layered";
+    public bool RequiresApi { get; set; }
+    public bool RequiresDatabase { get; set; }
+    public bool RequiresUI { get; set; }
+    public bool RequiresAuth { get; set; }
+    public string UserRequest { get; set; } = "";
+}
+
+/// <summary>
+/// Architettura della soluzione generata dinamicamente
+/// </summary>
+public class SolutionArchitecture
+{
+    public string SolutionName { get; set; } = "";
+    public List<ProjectInfo> Projects { get; set; } = new();
+    public List<string> Folders { get; set; } = new();
+    public List<FileInfo> Files { get; set; } = new();
+    public DomainAnalysis Analysis { get; set; } = new();
+}
+
+/// <summary>
+/// Informazioni su un progetto .NET
+/// </summary>
+public class ProjectInfo
+{
+    public string Name { get; set; } = "";
+    public string Type { get; set; } = "classlib"; // webapi, classlib, webapp
+    public string Description { get; set; } = "";
+    public List<string> Dependencies { get; set; } = new();
+}
+
+/// <summary>
+/// Informazioni su un file da generare
+/// </summary>
+public class FileInfo
+{
+    public string Path { get; set; } = "";
+    public string Type { get; set; } = ""; // csharp, json, markdown
+    public string Description { get; set; } = "";
 }

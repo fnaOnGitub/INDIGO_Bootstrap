@@ -912,6 +912,77 @@ public partial class NaturalLanguageViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Re-invia il task con un nuovo targetPath
+    /// </summary>
+    private async Task ExecuteTaskWithNewPathAsync(string taskName, string originalPayload, string newTargetPath)
+    {
+        try
+        {
+            _timelineService.AddStep(
+                "🔨 Generazione anteprima",
+                "Preparazione preview con nuovo percorso",
+                TimelineStepType.Processing
+            );
+            UpdateCurrentStepDisplay();
+
+            // Invia task per generare preview con il nuovo percorso
+            var previewResponse = await _client.DispatchTaskAsync("", taskName, originalPayload, newTargetPath);
+
+            // Verifica se c'è ancora un conflitto (caso improbabile ma possibile)
+            if (previewResponse?.Status == "folder-exists")
+            {
+                _timelineService.AddStep(
+                    "⚠️ Cartella ancora esistente",
+                    "Il nuovo percorso risulta ancora occupato",
+                    TimelineStepType.Info
+                );
+                UpdateCurrentStepDisplay();
+                await Task.Delay(300);
+
+                // Re-chiama ricorsivamente il conflitto handler
+                await HandleFolderExistsConflictAsync(previewResponse, taskName, originalPayload, newTargetPath);
+                return;
+            }
+
+            if (previewResponse?.Success == true)
+            {
+                _timelineService.AddStep(
+                    "🔍 Anteprima generata",
+                    "Preview delle modifiche pronta",
+                    TimelineStepType.Output
+                );
+                UpdateCurrentStepDisplay();
+                await Task.Delay(300);
+
+                // Continua con il normale flusso di conferma preview
+                var taskDescription = $"Creazione soluzione in: {newTargetPath}";
+                await HandlePreviewConfirmationAsync(taskName, originalPayload, newTargetPath, taskDescription, forceOverwrite: false);
+            }
+            else
+            {
+                _timelineService.AddStep(
+                    "❌ Errore generazione preview",
+                    previewResponse?.Message ?? "Errore sconosciuto",
+                    TimelineStepType.Error
+                );
+                UpdateCurrentStepDisplay();
+                CurrentStatus = "❌ Errore generazione preview";
+            }
+        }
+        catch (Exception ex)
+        {
+            _timelineService.AddStep(
+                "❌ Errore",
+                $"Errore durante re-invio task: {ex.Message}",
+                TimelineStepType.Error
+            );
+            UpdateCurrentStepDisplay();
+            CurrentStatus = "❌ Errore durante re-invio task";
+            System.Diagnostics.Debug.WriteLine($"Errore ExecuteTaskWithNewPathAsync: {ex}");
+        }
+    }
+
+    /// <summary>
     /// Gestisce il conflitto quando la cartella di destinazione esiste già
     /// </summary>
     private async Task HandleFolderExistsConflictAsync(dynamic folderExistsResponse, string taskName, string originalPayload, string? targetPath)
@@ -944,24 +1015,56 @@ public partial class NaturalLanguageViewModel : ObservableObject
                         await HandlePreviewConfirmationAsync(taskName, originalPayload, targetPath, taskDescription, forceOverwrite: true);
                         break;
 
-                    case Views.FolderExistsAction.UseDifferentName:
-                        // L'utente ha scelto un nome diverso
+                    case Views.FolderExistsAction.UseSuggestedName:
+                        // L'utente ha accettato il nome suggerito
                         _timelineService.AddStep(
-                            "✏️ Nome alternativo selezionato",
+                            "✅ Nome suggerito accettato",
+                            $"Nuovo nome: {suggestedAlternativeName}",
+                            TimelineStepType.Info
+                        );
+                        UpdateCurrentStepDisplay();
+                        await Task.Delay(300);
+
+                        // Aggiorna il targetPath con il nome suggerito
+                        var parentFolder = System.IO.Path.GetDirectoryName(existingPath) ?? targetPath ?? "";
+                        var newTargetPath = System.IO.Path.Combine(parentFolder, suggestedAlternativeName);
+                        
+                        _timelineService.AddStep(
+                            "📁 Nuovo percorso selezionato",
+                            $"Percorso: {newTargetPath}",
+                            TimelineStepType.Info
+                        );
+                        UpdateCurrentStepDisplay();
+                        await Task.Delay(300);
+
+                        // Re-invia il task con il nuovo targetPath
+                        await ExecuteTaskWithNewPathAsync(taskName, originalPayload, newTargetPath);
+                        break;
+
+                    case Views.FolderExistsAction.UseCustomName:
+                        // L'utente ha scelto un nome personalizzato
+                        _timelineService.AddStep(
+                            "✏️ Nome personalizzato selezionato",
                             $"Nuovo nome: {dialog.NewSolutionName}",
                             TimelineStepType.Info
                         );
                         UpdateCurrentStepDisplay();
                         await Task.Delay(300);
 
-                        // TODO: Implementare creazione con nome diverso
+                        // Aggiorna il targetPath con il nome personalizzato
+                        var parentFolderCustom = System.IO.Path.GetDirectoryName(existingPath) ?? targetPath ?? "";
+                        var customTargetPath = System.IO.Path.Combine(parentFolderCustom, dialog.NewSolutionName ?? "MyNewSolution");
+                        
                         _timelineService.AddStep(
-                            "⚠️ Funzionalità in sviluppo",
-                            "La creazione con nome diverso sarà disponibile nella prossima versione",
+                            "📁 Nuovo percorso selezionato",
+                            $"Percorso: {customTargetPath}",
                             TimelineStepType.Info
                         );
                         UpdateCurrentStepDisplay();
-                        CurrentStatus = "✅ Pronto ad eseguire il tuo comando";
+                        await Task.Delay(300);
+
+                        // Re-invia il task con il nuovo targetPath
+                        await ExecuteTaskWithNewPathAsync(taskName, originalPayload, customTargetPath);
                         break;
 
                     case Views.FolderExistsAction.Cancel:

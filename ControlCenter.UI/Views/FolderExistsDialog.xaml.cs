@@ -14,6 +14,7 @@ public partial class FolderExistsDialog : Window
     {
         InitializeComponent();
         ExistingPathText.Text = existingPath;
+        SuggestedNameText.Text = suggestedAlternativeName;
         NewSolutionName = suggestedAlternativeName;
     }
 
@@ -36,15 +37,23 @@ public partial class FolderExistsDialog : Window
         }
     }
 
+    private void BtnUseSuggested_Click(object sender, RoutedEventArgs e)
+    {
+        // Usa direttamente il nome suggerito senza richiedere input
+        UserAction = FolderExistsAction.UseSuggestedName;
+        DialogResult = true;
+        Close();
+    }
+
     private void BtnDifferentName_Click(object sender, RoutedEventArgs e)
     {
-        // Mostra dialog per inserire nuovo nome
+        // Mostra dialog per inserire nuovo nome personalizzato
         var inputDialog = new InputDialog("Nuovo nome soluzione", "Inserisci il nome per la nuova soluzione:", NewSolutionName ?? "MyNewSolution_1");
         
         if (inputDialog.ShowDialog() == true)
         {
             NewSolutionName = inputDialog.UserInput;
-            UserAction = FolderExistsAction.UseDifferentName;
+            UserAction = FolderExistsAction.UseCustomName;
             DialogResult = true;
             Close();
         }
@@ -65,5 +74,6 @@ public enum FolderExistsAction
 {
     Cancel,
     Overwrite,
-    UseDifferentName
+    UseSuggestedName,
+    UseCustomName
 }
