@@ -5,8 +5,8 @@
         Height="700" 
         Width="900"
         WindowStartupLocation="CenterScreen"
-        Background="#1E1E2E"
-        Foreground="White"
+        Background="{StaticResource ConsoleBackgroundBrush}"
+        Foreground="{StaticResource ConsoleTextBrush}"
         ResizeMode="CanResize">
     
     <Window.Resources>
@@ -14,7 +14,7 @@
         <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Foreground" Value="#CDD6F4"/>
+            <Setter Property="Foreground" Value="{StaticResource ConsoleTextBrush}"/>
             <Setter Property="Margin" Value="0,15,0,8"/>
         </Style>
         
@@ -64,11 +64,11 @@
             <TextBlock Text="🔍 Anteprima Modifiche" 
                        FontSize="24" 
                        FontWeight="Bold" 
-                       Foreground="#A6E3A1"
+                       Foreground="{StaticResource AccentCyanBrush}"
                        Margin="0,0,0,10"/>
             <TextBlock Text="Verifica le modifiche che verranno applicate prima di procedere" 
                        FontSize="13" 
-                       Foreground="#BAC2DE"
+                       Foreground="{StaticResource ConsoleTextSecondaryBrush}"
                        TextWrapping="Wrap"/>
         </StackPanel>
         
@@ -85,7 +85,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" 
-                                       Foreground="#A6E3A1" 
+                                       Foreground="{StaticResource LogDebugBrush}" 
                                        Margin="0,2"/>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -99,7 +99,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" 
-                                       Foreground="#89B4FA" 
+                                       Foreground="{StaticResource AccentCyanBrush}" 
                                        Margin="0,2"/>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -116,7 +116,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" 
-                                       Foreground="#F9E2AF" 
+                                       Foreground="{StaticResource LogWarnBrush}" 
                                        Margin="0,2"/>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -133,7 +133,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <TextBlock Text="{Binding}" 
-                                       Foreground="#F38BA8" 
+                                       Foreground="{StaticResource LogErrorBrush}" 
                                        Margin="0,2"/>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -142,30 +142,34 @@
                 <!-- Struttura finale prevista -->
                 <TextBlock Text="🧱 Struttura finale prevista" 
                            Style="{StaticResource SectionTitleStyle}"/>
-                <Border Background="#181825" 
+                <Border Background="{StaticResource ConsolePanelBrush}" 
                         CornerRadius="8" 
                         Padding="15"
-                        Margin="0,8,0,0">
+                        Margin="0,8,0,0"
+                        BorderBrush="{StaticResource ConsoleBorderBrush}"
+                        BorderThickness="1">
                     <TextBlock x:Name="FinalStructureTextBlock" 
                                FontFamily="Consolas" 
                                FontSize="12"
-                               Foreground="#CDD6F4"
+                               Foreground="{StaticResource ConsoleTextBrush}"
                                TextWrapping="Wrap"/>
                 </Border>
                 
                 <!-- Dettagli tecnici (collassabile) -->
                 <Expander Header="🔧 Mostra dettagli tecnici" 
-                          Foreground="#BAC2DE"
+                          Foreground="{StaticResource ConsoleTextSecondaryBrush}"
                           Margin="0,20,0,0"
                           FontSize="14">
-                    <Border Background="#181825" 
+                    <Border Background="{StaticResource ConsolePanelBrush}" 
                             CornerRadius="8" 
                             Padding="15"
-                            Margin="0,10,0,0">
+                            Margin="0,10,0,0"
+                            BorderBrush="{StaticResource ConsoleBorderBrush}"
+                            BorderThickness="1">
                         <TextBlock x:Name="TechnicalDetailsTextBlock" 
                                    FontFamily="Consolas" 
                                    FontSize="11"
-                                   Foreground="#A6ADC8"
+                                   Foreground="{StaticResource ConsoleTextSecondaryBrush}"
                                    TextWrapping="Wrap"/>
                     </Border>
                 </Expander>
@@ -183,23 +187,23 @@
             
             <Button Grid.Column="0"
                     Content="❓ Perché?" 
-                    Background="#89DCEB" 
-                    Foreground="#1E1E2E"
+                    Background="{StaticResource LogInfoBrush}" 
+                    Foreground="{StaticResource ConsoleBackgroundBrush}"
                     Style="{StaticResource ButtonStyle}"
                     Click="Explain_Click"
                     ToolTip="Spiega perché sto facendo questa azione"/>
             
             <Button Grid.Column="2"
                     Content="❌ Annulla" 
-                    Background="#F38BA8" 
-                    Foreground="#1E1E2E"
+                    Background="{StaticResource LogErrorBrush}" 
+                    Foreground="{StaticResource ConsoleBackgroundBrush}"
                     Style="{StaticResource ButtonStyle}"
                     Click="Cancel_Click"/>
             
             <Button Grid.Column="3"
                     Content="▶️ Procedi" 
-                    Background="#A6E3A1" 
-                    Foreground="#1E1E2E"
+                    Background="{StaticResource AccentCyanBrush}" 
+                    Foreground="{StaticResource ConsoleBackgroundBrush}"
                     Style="{StaticResource ButtonStyle}"
                     Click="Proceed_Click"/>
         </Grid>

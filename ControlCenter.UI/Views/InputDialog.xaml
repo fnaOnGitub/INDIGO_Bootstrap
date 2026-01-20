@@ -6,7 +6,8 @@
         Height="220"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="#F8F9FA">
+        Background="{StaticResource ConsoleBackgroundBrush}"
+        Foreground="{StaticResource ConsoleTextBrush}">
     
     <Grid Margin="30">
         <Grid.RowDefinitions>
@@ -22,14 +23,14 @@
                    x:Name="TitleText"
                    FontSize="18"
                    FontWeight="Bold"
-                   Foreground="#333"
+                   Foreground="{StaticResource ConsoleTextBrush}"
                    Margin="0,0,0,15"/>
 
         <!-- Label -->
         <TextBlock Grid.Row="1"
                    x:Name="LabelText"
                    FontSize="14"
-                   Foreground="#666"
+                   Foreground="{StaticResource ConsoleTextSecondaryBrush}"
                    Margin="0,0,0,10"/>
 
         <!-- Input -->
@@ -37,10 +38,13 @@
                  x:Name="InputTextBox"
                  FontSize="14"
                  Padding="10"
-                 BorderBrush="#CCC"
+                 Background="{StaticResource ConsolePanelBrush}"
+                 Foreground="{StaticResource ConsoleTextBrush}"
+                 BorderBrush="{StaticResource ConsoleBorderBrush}"
                  BorderThickness="1"
                  Margin="0,0,0,20"
-                 KeyDown="InputTextBox_KeyDown"/>
+                 KeyDown="InputTextBox_KeyDown"
+                 CaretBrush="{StaticResource AccentCyanBrush}"/>
 
         <!-- Pulsanti -->
         <StackPanel Grid.Row="4"
@@ -51,48 +55,26 @@
                     Content="✅ OK"
                     Width="100"
                     Height="36"
-                    Background="#28A745"
-                    Foreground="White"
+                    Background="{StaticResource AccentCyanBrush}"
+                    Foreground="{StaticResource ConsoleBackgroundBrush}"
                     FontSize="14"
                     FontWeight="SemiBold"
                     BorderThickness="0"
                     Cursor="Hand"
                     Click="BtnOK_Click"
-                    Margin="0,0,10,0">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#28A745"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#218838"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                    Margin="0,0,10,0"/>
 
             <Button x:Name="BtnCancel"
                     Content="❌ Annulla"
                     Width="100"
                     Height="36"
-                    Background="#6C757D"
-                    Foreground="White"
+                    Background="{StaticResource ConsoleTextDisabledBrush}"
+                    Foreground="{StaticResource ConsoleBackgroundBrush}"
                     FontSize="14"
                     FontWeight="SemiBold"
                     BorderThickness="0"
                     Cursor="Hand"
-                    Click="BtnCancel_Click">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#6C757D"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#5A6268"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                    Click="BtnCancel_Click"/>
         </StackPanel>
     </Grid>
 </Window>

@@ -5,8 +5,8 @@
         Height="650" 
         Width="800"
         WindowStartupLocation="CenterScreen"
-        Background="#1E1E2E"
-        Foreground="White"
+        Background="{StaticResource ConsoleBackgroundBrush}"
+        Foreground="{StaticResource ConsoleTextBrush}"
         ResizeMode="CanResize">
     
     <Window.Resources>
@@ -14,14 +14,14 @@
         <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="16"/>
             <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Foreground" Value="#CDD6F4"/>
+            <Setter Property="Foreground" Value="{StaticResource ConsoleTextBrush}"/>
             <Setter Property="Margin" Value="0,15,0,8"/>
         </Style>
         
         <!-- Style per il testo normale -->
         <Style x:Key="NormalTextStyle" TargetType="TextBlock">
             <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Foreground" Value="#BAC2DE"/>
+            <Setter Property="Foreground" Value="{StaticResource ConsoleTextSecondaryBrush}"/>
             <Setter Property="TextWrapping" Value="Wrap"/>
             <Setter Property="LineHeight" Value="22"/>
         </Style>
@@ -67,11 +67,11 @@
             <TextBlock Text="💬 Modalità Explain" 
                        FontSize="24" 
                        FontWeight="Bold" 
-                       Foreground="#89DCEB"
+                       Foreground="{StaticResource LogInfoBrush}"
                        Margin="0,0,0,10"/>
             <TextBlock Text="Comprendi perché il sistema sta facendo questa azione" 
                        FontSize="13" 
-                       Foreground="#BAC2DE"
+                       Foreground="{StaticResource ConsoleTextSecondaryBrush}"
                        TextWrapping="Wrap"/>
         </StackPanel>
         
@@ -83,10 +83,12 @@
                 <!-- Spiegazione narrativa -->
                 <TextBlock Text="📖 Spiegazione" 
                            Style="{StaticResource SectionTitleStyle}"/>
-                <Border Background="#181825" 
+                <Border Background="{StaticResource ConsolePanelBrush}" 
                         CornerRadius="8" 
                         Padding="15"
-                        Margin="0,0,0,10">
+                        Margin="0,0,0,10"
+                        BorderBrush="{StaticResource ConsoleBorderBrush}"
+                        BorderThickness="1">
                     <TextBlock x:Name="NarrativeTextBlock" 
                                Style="{StaticResource NormalTextStyle}"/>
                 </Border>
@@ -94,10 +96,12 @@
                 <!-- Motivazione tecnica -->
                 <TextBlock Text="🔧 Motivazione tecnica" 
                            Style="{StaticResource SectionTitleStyle}"/>
-                <Border Background="#181825" 
+                <Border Background="{StaticResource ConsolePanelBrush}" 
                         CornerRadius="8" 
                         Padding="15"
-                        Margin="0,0,0,10">
+                        Margin="0,0,0,10"
+                        BorderBrush="{StaticResource ConsoleBorderBrush}"
+                        BorderThickness="1">
                     <TextBlock x:Name="TechnicalReasonTextBlock" 
                                Style="{StaticResource NormalTextStyle}"/>
                 </Border>
@@ -105,10 +109,12 @@
                 <!-- Dipendenze -->
                 <TextBlock Text="🔗 Dipendenze" 
                            Style="{StaticResource SectionTitleStyle}"/>
-                <Border Background="#181825" 
+                <Border Background="{StaticResource ConsolePanelBrush}" 
                         CornerRadius="8" 
                         Padding="15"
-                        Margin="0,0,0,10">
+                        Margin="0,0,0,10"
+                        BorderBrush="{StaticResource ConsoleBorderBrush}"
+                        BorderThickness="1">
                     <TextBlock x:Name="DependenciesTextBlock" 
                                Style="{StaticResource NormalTextStyle}"/>
                 </Border>
@@ -116,13 +122,15 @@
                 <!-- Impatto -->
                 <TextBlock Text="⚡ Impatto" 
                            Style="{StaticResource SectionTitleStyle}"/>
-                <Border Background="#181825" 
+                <Border Background="{StaticResource ConsolePanelBrush}" 
                         CornerRadius="8" 
                         Padding="15"
-                        Margin="0,0,0,10">
+                        Margin="0,0,0,10"
+                        BorderBrush="{StaticResource ConsoleBorderBrush}"
+                        BorderThickness="1">
                     <StackPanel>
                         <TextBlock Text="Se confermi:" 
-                                   Foreground="#A6E3A1"
+                                   Foreground="{StaticResource LogDebugBrush}"
                                    FontWeight="SemiBold"
                                    Margin="0,0,0,5"/>
                         <TextBlock x:Name="ImpactConfirmTextBlock" 
@@ -130,7 +138,7 @@
                                    Margin="10,0,0,10"/>
                         
                         <TextBlock Text="Se annulli:" 
-                                   Foreground="#F38BA8"
+                                   Foreground="{StaticResource LogErrorBrush}"
                                    FontWeight="SemiBold"
                                    Margin="0,10,0,5"/>
                         <TextBlock x:Name="ImpactCancelTextBlock" 
@@ -141,13 +149,15 @@
                 
                 <!-- Alternative possibili -->
                 <Expander Header="🔀 Alternative possibili" 
-                          Foreground="#BAC2DE"
+                          Foreground="{StaticResource ConsoleTextSecondaryBrush}"
                           Margin="0,15,0,0"
                           FontSize="14">
-                    <Border Background="#181825" 
+                    <Border Background="{StaticResource ConsolePanelBrush}" 
                             CornerRadius="8" 
                             Padding="15"
-                            Margin="0,10,0,0">
+                            Margin="0,10,0,0"
+                            BorderBrush="{StaticResource ConsoleBorderBrush}"
+                            BorderThickness="1">
                         <TextBlock x:Name="AlternativesTextBlock" 
                                    Style="{StaticResource NormalTextStyle}"/>
                     </Border>
@@ -155,33 +165,37 @@
                 
                 <!-- Dettagli tecnici completi (collassabile) -->
                 <Expander Header="📚 Dettagli tecnici completi" 
-                          Foreground="#BAC2DE"
+                          Foreground="{StaticResource ConsoleTextSecondaryBrush}"
                           Margin="0,10,0,0"
                           FontSize="14">
-                    <Border Background="#181825" 
+                    <Border Background="{StaticResource ConsolePanelBrush}" 
                             CornerRadius="8" 
                             Padding="15"
-                            Margin="0,10,0,0">
+                            Margin="0,10,0,0"
+                            BorderBrush="{StaticResource ConsoleBorderBrush}"
+                            BorderThickness="1">
                         <TextBlock x:Name="FullTechnicalDetailsTextBlock" 
                                    FontFamily="Consolas" 
                                    FontSize="11"
-                                   Foreground="#A6ADC8"
+                                   Foreground="{StaticResource ConsoleTextSecondaryBrush}"
                                    TextWrapping="Wrap"/>
                     </Border>
                 </Expander>
                 
                 <!-- Nota modalità explain -->
-                <Border Background="#313244" 
+                <Border Background="{StaticResource ConsolePanelAltBrush}" 
                         CornerRadius="8" 
                         Padding="12"
-                        Margin="0,20,0,0">
+                        Margin="0,20,0,0"
+                        BorderBrush="{StaticResource ConsoleBorderBrush}"
+                        BorderThickness="1">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="💡" 
                                    FontSize="16"
                                    Margin="0,0,10,0"/>
                         <TextBlock Text="Modalità Explain attiva - Ogni azione è spiegata e motivata" 
                                    FontSize="12"
-                                   Foreground="#F9E2AF"
+                                   Foreground="{StaticResource LogWarnBrush}"
                                    TextWrapping="Wrap"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
@@ -192,8 +206,8 @@
         <!-- Action Button -->
         <Grid Grid.Row="2">
             <Button Content="✅ Ho capito" 
-                    Background="#89B4FA" 
-                    Foreground="#1E1E2E"
+                    Background="{StaticResource AccentCyanBrush}" 
+                    Foreground="{StaticResource ConsoleBackgroundBrush}"
                     Style="{StaticResource ButtonStyle}"
                     HorizontalAlignment="Right"
                     Click="Ok_Click"/>

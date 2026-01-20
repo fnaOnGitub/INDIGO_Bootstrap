@@ -9,7 +9,7 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="20">
             <!-- Titolo -->
-            <TextBlock Text="Dashboard" Style="{StaticResource TitleTextStyle}" Margin="0,0,0,20"/>
+            <TextBlock Text="📊 Dashboard" Style="{StaticResource TitleTextStyle}" Margin="0,0,0,20"/>
             
             <!-- Stato Workers -->
             <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,20">
@@ -20,33 +20,36 @@
                             <Button x:Name="BtnRefreshWorkers"
                                     Content="🔄 Aggiorna" 
                                     Click="RefreshWorkers_Click"
-                                    Background="#6366F1"
-                                    Foreground="White"
+                                    Background="{StaticResource AccentCyanBrush}"
+                                    Foreground="{StaticResource ConsoleBackgroundBrush}"
                                     Padding="10,6"
                                     Margin="5,0"
                                     FontSize="12"
+                                    FontWeight="SemiBold"
                                     BorderThickness="0"
                                     Cursor="Hand"/>
                             
                             <Button x:Name="BtnStartCluster"
                                     Content="▶️ Avvia" 
                                     Click="StartCluster_Click"
-                                    Background="#10B981"
-                                    Foreground="White"
+                                    Background="{StaticResource LogDebugBrush}"
+                                    Foreground="{StaticResource ConsoleBackgroundBrush}"
                                     Padding="10,6"
                                     Margin="5,0"
                                     FontSize="12"
+                                    FontWeight="SemiBold"
                                     BorderThickness="0"
                                     Cursor="Hand"/>
                             
                             <Button x:Name="BtnStopCluster"
                                     Content="⏹️ Ferma" 
                                     Click="StopCluster_Click"
-                                    Background="#EF4444"
-                                    Foreground="White"
+                                    Background="{StaticResource LogErrorBrush}"
+                                    Foreground="{StaticResource ConsoleBackgroundBrush}"
                                     Padding="10,6"
                                     Margin="5,0"
                                     FontSize="12"
+                                    FontWeight="SemiBold"
                                     BorderThickness="0"
                                     Cursor="Hand"/>
                         </StackPanel>
@@ -57,7 +60,7 @@
                                Text="⏳ Avvio automatico in corso..." 
                                HorizontalAlignment="Center"
                                Margin="0,0,0,15"
-                               Foreground="#F59E0B"
+                               Foreground="{StaticResource LogWarnBrush}"
                                FontSize="13"
                                FontWeight="SemiBold"/>
                     
@@ -65,12 +68,12 @@
                     <ItemsControl x:Name="WorkersItemsControl">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border BorderBrush="#E5E7EB" 
+                                <Border BorderBrush="{StaticResource ConsoleBorderBrush}" 
                                        BorderThickness="1" 
                                        CornerRadius="6" 
                                        Padding="12"
                                        Margin="0,0,0,8"
-                                       Background="White">
+                                       Background="{StaticResource ConsolePanelAltBrush}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
@@ -91,15 +94,16 @@
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Name}" 
                                                       FontWeight="SemiBold" 
-                                                      FontSize="13"/>
+                                                      FontSize="13"
+                                                      Foreground="{StaticResource ConsoleTextBrush}"/>
                                             <TextBlock Text="{Binding Description}" 
                                                       FontSize="11" 
-                                                      Foreground="#6B7280"
+                                                      Foreground="{StaticResource ConsoleTextSecondaryBrush}"
                                                       Margin="0,2,0,0"/>
                                             <TextBlock Text="{Binding DiagnosticInfo}" 
                                                       FontSize="10" 
                                                       FontFamily="Consolas"
-                                                      Foreground="#9CA3AF"
+                                                      Foreground="{StaticResource ConsoleTextDisabledBrush}"
                                                       Margin="0,3,0,0"
                                                       TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
@@ -122,7 +126,7 @@
                                                   Text="{Binding Port, StringFormat=':{0}'}" 
                                                   FontSize="12"
                                                   FontFamily="Consolas"
-                                                  Foreground="#9CA3AF"
+                                                  Foreground="{StaticResource ConsoleTextDisabledBrush}"
                                                   VerticalAlignment="Center"/>
                                     </Grid>
                                 </Border>
@@ -164,11 +168,12 @@
                     <ItemsControl ItemsSource="{Binding Agents}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border BorderBrush="#E0E0E0" 
+                                <Border BorderBrush="{StaticResource ConsoleBorderBrush}" 
                                        BorderThickness="1" 
                                        CornerRadius="4" 
                                        Padding="15"
-                                       Margin="0,0,0,10">
+                                       Margin="0,0,0,10"
+                                       Background="{StaticResource ConsolePanelAltBrush}">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="20"/>
@@ -200,33 +205,36 @@
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Name}" 
                                                       FontWeight="SemiBold" 
-                                                      FontSize="14"/>
+                                                      FontSize="14"
+                                                      Foreground="{StaticResource ConsoleTextBrush}"/>
                                             <TextBlock Text="{Binding Url}" 
                                                       FontSize="10" 
-                                                      Foreground="Gray"/>
+                                                      Foreground="{StaticResource ConsoleTextDisabledBrush}"/>
                                         </StackPanel>
                                         
                                         <!-- Status -->
                                         <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="15,0">
-                                            <TextBlock Text="Status" FontSize="10" Foreground="Gray"/>
-                                            <TextBlock Text="{Binding Status}" FontWeight="SemiBold"/>
+                                            <TextBlock Text="Status" FontSize="10" Foreground="{StaticResource ConsoleTextDisabledBrush}"/>
+                                            <TextBlock Text="{Binding Status}" FontWeight="SemiBold" Foreground="{StaticResource ConsoleTextBrush}"/>
                                         </StackPanel>
                                         
                                         <!-- Uptime -->
                                         <StackPanel Grid.Column="3" VerticalAlignment="Center">
-                                            <TextBlock Text="Uptime" FontSize="10" Foreground="Gray"/>
+                                            <TextBlock Text="Uptime" FontSize="10" Foreground="{StaticResource ConsoleTextDisabledBrush}"/>
                                             <TextBlock Text="{Binding Uptime}" 
                                                       FontFamily="Consolas" 
-                                                      FontWeight="SemiBold"/>
+                                                      FontWeight="SemiBold"
+                                                      Foreground="{StaticResource ConsoleTextBrush}"/>
                                         </StackPanel>
                                         
                                         <!-- Last Task -->
                                         <StackPanel Grid.Column="4" VerticalAlignment="Center" Margin="15,0,0,0">
-                                            <TextBlock Text="Last Task" FontSize="10" Foreground="Gray"/>
+                                            <TextBlock Text="Last Task" FontSize="10" Foreground="{StaticResource ConsoleTextDisabledBrush}"/>
                                             <TextBlock Text="{Binding LastTask}" 
                                                       FontFamily="Consolas" 
                                                       FontSize="11"
-                                                      TextTrimming="CharacterEllipsis"/>
+                                                      TextTrimming="CharacterEllipsis"
+                                                      Foreground="{StaticResource ConsoleTextBrush}"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -237,7 +245,7 @@
                     <!-- Messaggio quando non ci sono agenti -->
                     <TextBlock Text="Nessun agente disponibile. Verificare che Agent.Monitor sia in esecuzione su porta 5004."
                               TextWrapping="Wrap"
-                              Foreground="Gray"
+                              Foreground="{StaticResource ConsoleTextDisabledBrush}"
                               FontStyle="Italic"
                               Margin="0,10,0,0"
                               Visibility="{Binding Agents.Count, Converter={StaticResource ZeroToVisibilityConverter}}"/>
@@ -312,8 +320,8 @@
                                Cursor="Hand"/>
                     </Grid>
                     
-                    <Border Background="#F9F9F9" 
-                           BorderBrush="{StaticResource IndigoDarkBrush}" 
+                    <Border Background="{StaticResource ConsoleBackgroundBrush}" 
+                           BorderBrush="{StaticResource ConsoleBorderBrush}" 
                            BorderThickness="1" 
                            MaxHeight="300">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -324,7 +332,8 @@
                                                   FontFamily="Consolas" 
                                                   FontSize="11" 
                                                   Padding="5,2"
-                                                  TextWrapping="Wrap"/>
+                                                  TextWrapping="Wrap"
+                                                  Foreground="{StaticResource ConsoleTextBrush}"/>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>

@@ -6,7 +6,8 @@
         Height="400"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
-        Background="#F8F9FA">
+        Background="{StaticResource ConsoleBackgroundBrush}"
+        Foreground="{StaticResource ConsoleTextBrush}">
     
     <Grid Margin="30">
         <Grid.RowDefinitions>
@@ -24,23 +25,23 @@
                    Text="⚠️ Attenzione: Cartella già esistente"
                    FontSize="24"
                    FontWeight="Bold"
-                   Foreground="#FF6B35"
+                   Foreground="{StaticResource LogWarnBrush}"
                    Margin="0,0,0,20"/>
 
         <!-- Messaggio -->
         <TextBlock Grid.Row="1"
                    TextWrapping="Wrap"
                    FontSize="14"
-                   Foreground="#333"
+                   Foreground="{StaticResource ConsoleTextBrush}"
                    Margin="0,0,0,15">
             <Run Text="La cartella di destinazione contiene già una soluzione:"/>
         </TextBlock>
 
         <!-- Percorso esistente -->
         <Border Grid.Row="2"
-                Background="#FFF3CD"
-                BorderBrush="#FFC107"
-                BorderThickness="1"
+                Background="{StaticResource ConsolePanelBrush}"
+                BorderBrush="{StaticResource LogWarnBrush}"
+                BorderThickness="2"
                 Padding="15"
                 CornerRadius="5"
                 Margin="0,0,0,20">
@@ -54,22 +55,23 @@
                            Text="📁 Percorso:"
                            FontWeight="Bold"
                            FontSize="13"
+                           Foreground="{StaticResource LogWarnBrush}"
                            Margin="0,0,0,5"/>
                 
                 <TextBlock Grid.Row="1"
                            x:Name="ExistingPathText"
                            FontFamily="Consolas"
                            FontSize="12"
-                           Foreground="#856404"
+                           Foreground="{StaticResource ConsoleTextBrush}"
                            TextWrapping="Wrap"/>
             </Grid>
         </Border>
 
         <!-- Nome suggerito -->
         <Border Grid.Row="3"
-                Background="#D4EDDA"
-                BorderBrush="#28A745"
-                BorderThickness="1"
+                Background="{StaticResource ConsolePanelBrush}"
+                BorderBrush="{StaticResource AccentCyanBrush}"
+                BorderThickness="2"
                 Padding="15"
                 CornerRadius="5"
                 Margin="0,0,0,15">
@@ -83,7 +85,7 @@
                            Text="💡 Nome alternativo suggerito:"
                            FontWeight="Bold"
                            FontSize="13"
-                           Foreground="#155724"
+                           Foreground="{StaticResource AccentCyanBrush}"
                            Margin="0,0,0,5"/>
                 
                 <TextBlock Grid.Row="1"
@@ -91,7 +93,7 @@
                            FontFamily="Consolas"
                            FontSize="14"
                            FontWeight="Bold"
-                           Foreground="#155724"/>
+                           Foreground="{StaticResource ConsoleTextBrush}"/>
             </Grid>
         </Border>
 
@@ -100,7 +102,7 @@
                    Text="Come vuoi procedere?"
                    FontSize="16"
                    FontWeight="SemiBold"
-                   Foreground="#333"
+                   Foreground="{StaticResource ConsoleTextBrush}"
                    Margin="0,0,0,20"/>
 
         <!-- Pulsanti -->
@@ -113,99 +115,55 @@
                     Content="🔥 Sovrascrivi"
                     Width="140"
                     Height="40"
-                    Background="#DC3545"
-                    Foreground="White"
+                    Background="{StaticResource LogErrorBrush}"
+                    Foreground="{StaticResource ConsoleBackgroundBrush}"
                     FontSize="14"
                     FontWeight="SemiBold"
                     BorderThickness="0"
                     Cursor="Hand"
                     Click="BtnOverwrite_Click"
-                    Margin="0,0,10,0">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#DC3545"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#C82333"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                    Margin="0,0,10,0"/>
 
             <!-- Pulsante Usa Nome Suggerito -->
             <Button x:Name="BtnUseSuggested"
                     Content="✅ Usa nome suggerito"
                     Width="180"
                     Height="40"
-                    Background="#28A745"
-                    Foreground="White"
+                    Background="{StaticResource AccentCyanBrush}"
+                    Foreground="{StaticResource ConsoleBackgroundBrush}"
                     FontSize="14"
                     FontWeight="SemiBold"
                     BorderThickness="0"
                     Cursor="Hand"
                     Click="BtnUseSuggested_Click"
-                    Margin="0,0,10,0">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#28A745"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#218838"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                    Margin="0,0,10,0"/>
 
             <!-- Pulsante Nome Diverso -->
             <Button x:Name="BtnDifferentName"
                     Content="✏️ Scegli altro nome"
                     Width="160"
                     Height="40"
-                    Background="#FFC107"
-                    Foreground="#333"
+                    Background="{StaticResource LogWarnBrush}"
+                    Foreground="{StaticResource ConsoleBackgroundBrush}"
                     FontSize="14"
                     FontWeight="SemiBold"
                     BorderThickness="0"
                     Cursor="Hand"
                     Click="BtnDifferentName_Click"
-                    Margin="0,0,10,0">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#FFC107"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#E0A800"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                    Margin="0,0,10,0"/>
 
             <!-- Pulsante Annulla -->
             <Button x:Name="BtnCancel"
                     Content="❌ Annulla"
                     Width="120"
                     Height="40"
-                    Background="#6C757D"
-                    Foreground="White"
+                    Background="{StaticResource ConsoleTextDisabledBrush}"
+                    Foreground="{StaticResource ConsoleBackgroundBrush}"
                     FontSize="14"
                     FontWeight="SemiBold"
                     BorderThickness="0"
                     Cursor="Hand"
-                    Click="BtnCancel_Click">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Background" Value="#6C757D"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#5A6268"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                    Click="BtnCancel_Click"/>
         </StackPanel>
     </Grid>
 </Window>
